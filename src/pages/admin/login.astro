@@ -1,0 +1,136 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { BrandLogo } from '../../../cms/components/BrandLogo';
+
+export const prerender = false;
+
+// If already authenticated with a valid token, redirect directly to /admin
+import { getUserByToken } from '../../../cms/auth/users';
+const currentToken = Astro.cookies.get('infusio_auth_token')?.value;
+if (currentToken) {
+  const existingUser = getUserByToken(currentToken);
+  if (existingUser) {
+    return Astro.redirect('/admin');
+  }
+}
+---
+
+<Layout title="Sign In | Infusio Studio CMS Portal">
+  <div
+    style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #0e1113; padding: 24px; box-sizing: border-box;"
+  >
+    {/* Card Container */}
+    <div
+      style="width: 100%; max-width: 440px; padding: 40px; border-radius: 20px; background: #14191d; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); box-sizing: border-box;"
+    >
+      {/* Brand Header */}
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="display: flex; justify-content: center; margin-bottom: 16px;">
+          <BrandLogo size="lg" />
+        </div>
+        <h1 style="font-size: 1.45rem; font-weight: 800; color: #e8eef7; margin: 0 0 6px 0; letter-spacing: -0.02em;">
+          Access Portal
+        </h1>
+        <p style="margin: 0; font-size: 0.85rem; color: #a8b1c1;">
+          Passwordless security token authentication
+        </p>
+      </div>
+
+      {/* Error Message Alert */}
+      <div
+        id="loginErrorAlert"
+        style="display: none; padding: 12px 16px; border-radius: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; font-size: 0.825rem; margin-bottom: 20px;"
+      ></div>
+
+      {/* Login Form */}
+      <form id="tokenLoginForm" style="display: flex; flex-direction: column; gap: 18px;">
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #a8b1c1; margin-bottom: 6px;">
+            Account Identifier
+          </label>
+          <input
+            id="identifierInput"
+            type="text"
+            required
+            autocomplete="username"
+            placeholder="e.g. boris@computacionintegral.com or test@sperling"
+            style="width: 100%; padding: 12px 14px; border-radius: 8px; background: #0e1113; border: 1px solid rgba(255, 255, 255, 0.12); color: #e8eef7; font-size: 0.9rem; box-sizing: border-box; outline: none; transition: border 0.2s;"
+          />
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #a8b1c1; margin-bottom: 6px;">
+            Security Access Token
+          </label>
+          <input
+            id="tokenInput"
+            type="text"
+            required
+            autocomplete="off"
+            placeholder="e.g. INF-ADMIN-9482-7103"
+            style="width: 100%; padding: 12px 14px; border-radius: 8px; background: #0e1113; border: 1px solid rgba(255, 255, 255, 0.12); color: #13c296; font-family: monospace; font-size: 0.95rem; font-weight: 600; box-sizing: border-box; outline: none; transition: border 0.2s;"
+          />
+        </div>
+
+        <button
+          id="submitLoginBtn"
+          type="submit"
+          style="width: 100%; padding: 13px; border-radius: 8px; background: linear-gradient(135deg, #13c296 0%, #2dd4bf 100%); color: #0b0f11; font-weight: 800; font-size: 0.925rem; border: none; cursor: pointer; margin-top: 8px; box-shadow: 0 4px 16px rgba(19, 194, 150, 0.35); transition: opacity 0.2s;"
+        >
+          Verify Token & Enter Workspace →
+        </button>
+      </form>
+
+      {/* Security Guidance Footer */}
+      <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center;">
+        <p style="margin: 0; font-size: 0.75rem; color: #717d91; line-height: 1.5;">
+          Access tokens are cryptographically generated and issued directly by your administrator. Passwords and public signups are permanently disabled.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('tokenLoginForm');
+    const identifierInput = document.getElementById('identifierInput') as HTMLInputElement;
+    const tokenInput = document.getElementById('tokenInput') as HTMLInputElement;
+    const submitBtn = document.getElementById('submitLoginBtn') as HTMLButtonElement;
+    const errorAlert = document.getElementById('loginErrorAlert') as HTMLDivElement;
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!identifierInput.value || !tokenInput.value) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Authenticating security token...';
+      errorAlert.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            identifier: identifierInput.value.trim(),
+            token: tokenInput.value.trim(),
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          window.location.href = data.redirect || '/admin';
+        } else {
+          errorAlert.textContent = data.error || 'Authentication rejected. Please check your credentials.';
+          errorAlert.style.display = 'block';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Verify Token & Enter Workspace →';
+        }
+      } catch (err) {
+        errorAlert.textContent = 'Network or server communication error. Please try again.';
+        errorAlert.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Verify Token & Enter Workspace →';
+      }
+    });
+  </script>
+</Layout>

@@ -1,7 +1,22 @@
 ---
+import { getUserByToken } from '../../../cms/auth/users';
 import { AdminDashboard } from '../../../cms/components/AdminDashboard';
+import { ClientDashboard } from '../../../cms/components/ClientDashboard';
 
 export const prerender = false;
+
+const token = Astro.cookies.get('infusio_auth_token')?.value;
+
+if (!token) {
+  return Astro.redirect('/admin/login');
+}
+
+const user = getUserByToken(token);
+
+if (!user) {
+  Astro.cookies.delete('infusio_auth_token', { path: '/' });
+  return Astro.redirect('/admin/login');
+}
 ---
 
 <!doctype html>
@@ -10,7 +25,9 @@ export const prerender = false;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/assets/brand-icon.svg" />
-    <title>Infusio Studio CMS - Administrative Dashboard</title>
+    <title>
+      {user.role === 'superadmin' ? 'Infusio Studio CMS - Master Dashboard' : `${user.assignedSite?.name || 'Client Workspace'} | Infusio CMS`}
+    </title>
     <link rel="stylesheet" href="/cms/styles/admin-theme.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -19,7 +36,11 @@ export const prerender = false;
       rel="stylesheet"
     />
   </head>
-  <body style="margin: 0; padding: 0; background-color: #0B0F19;">
-    <AdminDashboard client:load />
+  <body style="margin: 0; padding: 0; background-color: #0e1113;">
+    {user.role === 'superadmin' ? (
+      <AdminDashboard user={{ name: user.displayName, identifier: user.identifier }} client:load />
+    ) : (
+      <ClientDashboard user={user} client:load />
+    )}
   </body>
 </html>
