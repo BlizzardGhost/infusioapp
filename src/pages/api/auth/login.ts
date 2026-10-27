@@ -1,33 +1,36 @@
 import type { APIRoute } from 'astro';
-import { authenticateWithToken } from '../../../../cms/auth/users';
+import { verifyFourDigitToken } from '../../../../cms/auth/tokens';
+import { createSessionToken } from '../../../../cms/auth/users';
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const body = await request.json().catch(() => ({}));
-    const { identifier, token } = body;
+    const { identifier, code, token } = body;
+    const submittedCode = code || token;
 
-    if (!identifier || !token) {
+    if (!identifier || !submittedCode) {
       return new Response(
-        JSON.stringify({ error: 'Both Account Identifier and Security Token are required.' }),
+        JSON.stringify({ error: 'Both account identifier and 4-digit security code are required.' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const user = authenticateWithToken(identifier, token);
+    const verification = verifyFourDigitToken(identifier, submittedCode);
 
-    if (!user) {
+    if (!verification.valid || !verification.user) {
       return new Response(
         JSON.stringify({
-          error: 'Access denied: Invalid identifier or security token. Please verify with your Infusio administrator.',
+          error: verification.error || 'Access denied: Invalid or expired 4-digit security code.',
         }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Set secure authentication cookie
-    cookies.set('infusio_auth_token', user.token, {
+    const sessionToken = createSessionToken(verification.user);
+
+    cookies.set('infusio_auth_token', sessionToken, {
       path: '/',
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -39,9 +42,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       JSON.stringify({
         success: true,
         user: {
-          identifier: user.identifier,
-          displayName: user.displayName,
-          role: user.role,
+          identifier: verification.user.identifier,
+          displayName: verification.user.displayName,
+          role: verification.user.role,
         },
         redirect: '/admin',
       }),

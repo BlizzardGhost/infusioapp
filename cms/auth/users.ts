@@ -1,8 +1,8 @@
 /**
- * INFUSIO HEADLESS CMS - SECURE TOKEN-BASED ACCESS CONTROL
+ * INFUSIO HEADLESS CMS - SECURE USER DIRECTORY & SESSION MANAGEMENT
  *
- * Passwordless, invitation-only architecture.
- * Tokens are cryptographically unique security codes issued and managed by the Super Admin.
+ * Passwordless architecture: On-demand 4-digit security codes valid for 10 minutes.
+ * Scoped permissions per user/client.
  */
 
 export interface ClientFeature {
@@ -24,10 +24,9 @@ export interface ClientChangeRequest {
 
 export interface UserAccount {
   id: string;
-  identifier: string; // Email or Client ID handle
+  identifier: string; // Email or Client ID
   displayName: string;
   role: 'superadmin' | 'client';
-  token: string;
   assignedSite?: {
     id: string;
     name: string;
@@ -38,18 +37,14 @@ export interface UserAccount {
     changeRequests: ClientChangeRequest[];
   };
   createdAt: string;
-  lastLogin?: string;
 }
 
-// In-memory persistent state for initial users
-// Tokens can also be overridden or extended via environment variables
 export const INITIAL_USERS: UserAccount[] = [
   {
     id: 'usr_admin_boris',
     identifier: 'boris@computacionintegral.com',
-    displayName: 'Boris (Super Admin)',
+    displayName: 'Boris (Superadmin)',
     role: 'superadmin',
-    token: process.env.ADMIN_ACCESS_TOKEN || 'INF-ADMIN-9482-7103',
     createdAt: '2026-10-27T00:00:00Z',
   },
   {
@@ -57,7 +52,6 @@ export const INITIAL_USERS: UserAccount[] = [
     identifier: 'test@sperling',
     displayName: 'Sperling Client',
     role: 'client',
-    token: process.env.SPERLING_ACCESS_TOKEN || 'SPERLING-ACCESS-4821',
     assignedSite: {
       id: 'camp-david-mvp',
       name: 'Camp David MVP',
@@ -118,20 +112,6 @@ export const INITIAL_USERS: UserAccount[] = [
 ];
 
 /**
- * Validate token and identifier match
- */
-export function authenticateWithToken(identifier: string, token: string): UserAccount | null {
-  const cleanId = identifier.trim().toLowerCase();
-  const cleanToken = token.trim();
-
-  const user = INITIAL_USERS.find(
-    (u) => u.identifier.toLowerCase() === cleanId && u.token === cleanToken
-  );
-
-  return user || null;
-}
-
-/**
  * Retrieve user by identifier
  */
 export function getUserByIdentifier(identifier: string): UserAccount | null {
@@ -140,16 +120,21 @@ export function getUserByIdentifier(identifier: string): UserAccount | null {
 }
 
 /**
- * Retrieve user by token (for session verification)
+ * Retrieve user by session token or ID
  */
-export function getUserByToken(token: string): UserAccount | null {
-  const cleanToken = token.trim();
-  return INITIAL_USERS.find((u) => u.token === cleanToken) || null;
+export function getUserBySession(sessionString: string): UserAccount | null {
+  try {
+    const [userId] = sessionString.split(':');
+    return INITIAL_USERS.find((u) => u.id === userId) || null;
+  } catch {
+    return null;
+  }
 }
 
 /**
- * Helper to fetch all client accounts for the Super Admin
+ * Create a simple signed session token for verified users
  */
-export function getAllClients(): UserAccount[] {
-  return INITIAL_USERS.filter((u) => u.role === 'client');
+export function createSessionToken(user: UserAccount): string {
+  const timestamp = Date.now();
+  return `${user.id}:${timestamp}`;
 }

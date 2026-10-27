@@ -1,17 +1,17 @@
 ---
-import { getUserByToken } from '../../../cms/auth/users';
+import { getUserBySession } from '../../../cms/auth/users';
 import { AdminDashboard } from '../../../cms/components/AdminDashboard';
 import { ClientDashboard } from '../../../cms/components/ClientDashboard';
 
 export const prerender = false;
 
-const token = Astro.cookies.get('infusio_auth_token')?.value;
+const sessionToken = Astro.cookies.get('infusio_auth_token')?.value;
 
-if (!token) {
+if (!sessionToken) {
   return Astro.redirect('/admin/login');
 }
 
-const user = getUserByToken(token);
+const user = getUserBySession(sessionToken);
 
 if (!user) {
   Astro.cookies.delete('infusio_auth_token', { path: '/' });
@@ -32,11 +32,11 @@ if (!user) {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
   </head>
-  <body style="margin: 0; padding: 0; background-color: #0e1113;">
+  <body style="margin: 0; padding: 0; background-color: #0e1113; font-family: 'Quicksand', sans-serif;">
     {user.role === 'superadmin' ? (
       <AdminDashboard user={{ name: user.displayName, identifier: user.identifier }} client:load />
     ) : (

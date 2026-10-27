@@ -14,7 +14,6 @@ export interface AdminDashboardProps {
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   user = { name: 'Boris', handle: 'BlizzardGhost', identifier: 'boris@computacionintegral.com' },
 }) => {
-  // Hero Wall test profile state directly matching hero-wall-mvp
   const [heroProfile, setHeroProfile] = useState({
     name: 'Boris',
     title: 'LATAM AI Sherpa',
@@ -30,13 +29,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+
+  // Dynamic 4-digit token generator state for clients
+  const [generatedClientCodes, setGeneratedClientCodes] = useState<Record<string, { code: string; expiresAt: number }>>({});
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
-  // Clients from directory
   const clients = INITIAL_USERS.filter((u) => u.role === 'client');
 
-  const handleCopyToken = (token: string, id: string) => {
-    navigator.clipboard.writeText(token);
+  const handleGenerateCodeForClient = async (identifier: string) => {
+    try {
+      const res = await fetch('/api/auth/request-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier }),
+      });
+      const data = await res.json();
+      if (data.clientDispatchCode) {
+        setGeneratedClientCodes((prev) => ({
+          ...prev,
+          [identifier]: { code: data.clientDispatchCode, expiresAt: Date.now() + 10 * 60 * 1000 },
+        }));
+      }
+    } catch {
+      // Fallback local mock
+      const mockCode = Math.floor(1000 + Math.random() * 9000).toString();
+      setGeneratedClientCodes((prev) => ({
+        ...prev,
+        [identifier]: { code: mockCode, expiresAt: Date.now() + 10 * 60 * 1000 },
+      }));
+    }
+  };
+
+  const handleCopyCode = (code: string, id: string) => {
+    navigator.clipboard.writeText(code);
     setCopiedToken(id);
     setTimeout(() => setCopiedToken(null), 3000);
   };
@@ -73,7 +98,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         minHeight: '100vh',
         backgroundColor: 'var(--bg, #0e1113)',
         color: 'var(--ink, #e8eef7)',
-        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        fontFamily: "'Quicksand', system-ui, -apple-system, sans-serif",
       }}
     >
       <CustomNav />
@@ -96,7 +121,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <img
               src="/assets/brand-logo.webp"
               alt="Infusio"
-              style={{ height: '30px', width: 'auto', objectFit: 'contain' }}
+              style={{ height: '28px', width: 'auto', objectFit: 'contain' }}
             />
             <span
               style={{
@@ -141,14 +166,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               type="button"
               onClick={handleLogout}
               style={{
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                padding: '8px 16px',
+                borderRadius: '999px',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
                 background: 'transparent',
                 color: '#a8b1c1',
                 fontSize: '0.8rem',
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: 'pointer',
+                fontFamily: 'Quicksand, sans-serif',
               }}
             >
               Sign Out
@@ -181,12 +207,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     marginBottom: '8px',
                   }}
                 >
-                  Master Agency Control • Token Auth Engine
+                  Master Agency Control • On-Demand 4-Digit Tokens
                 </div>
                 <h1
                   style={{
                     fontSize: '1.9rem',
-                    fontWeight: 800,
+                    fontWeight: 700,
                     margin: '0 0 10px 0',
                     letterSpacing: '-0.02em',
                     color: '#e8eef7',
@@ -195,7 +221,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   Global Overview: {user.identifier}
                 </h1>
                 <p style={{ margin: 0, color: '#a8b1c1', fontSize: '0.95rem', lineHeight: 1.6 }}>
-                  You have full administrative jurisdiction over all client applications, security token generation, and the active <strong>hero-wall-mvp</strong> testing harness.
+                  Passwordless authentication active. 4-digit tokens expire in 10 minutes. Manage client scopes and trigger GitHub sync for <strong>hero-wall-mvp</strong>.
                 </p>
               </div>
 
@@ -205,8 +231,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onClick={handleTriggerAgentSync}
                   disabled={isSyncing}
                   style={{
-                    padding: '12px 20px',
-                    borderRadius: '10px',
+                    padding: '12px 22px',
+                    borderRadius: '999px',
                     background: 'linear-gradient(135deg, #13c296, #2dd4bf)',
                     color: '#0b0f11',
                     fontWeight: 800,
@@ -214,6 +240,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     border: 'none',
                     cursor: 'pointer',
                     boxShadow: '0 4px 16px rgba(19, 194, 150, 0.35)',
+                    fontFamily: 'Quicksand, sans-serif',
                   }}
                 >
                   {isSyncing ? 'Syncing...' : '⚡ Sync hero-wall-mvp'}
@@ -226,7 +253,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 style={{
                   marginTop: '16px',
                   padding: '10px 16px',
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   background: 'rgba(19, 194, 150, 0.15)',
                   border: '1px solid rgba(19, 194, 150, 0.3)',
                   color: '#2dd4bf',
@@ -239,7 +266,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
           </div>
 
-          {/* CLIENT ACCESS & SECURITY TOKENS PANEL */}
+          {/* CLIENT ACCESS & ON-DEMAND TOKEN HUB */}
           <div
             style={{
               padding: '28px',
@@ -252,98 +279,126 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 4px 0', color: '#e8eef7' }}>
-                  Client Management & Security Access Tokens
+                  Client Access Management (On-Demand 10-Min Codes)
                 </h2>
                 <p style={{ margin: 0, fontSize: '0.85rem', color: '#a8b1c1' }}>
-                  Passwordless tokens issued to clients to access and manage their designated applications.
+                  Generate on-demand 4-digit codes for client accounts (valid for 10 minutes, single-use).
                 </p>
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {clients.map((client) => (
-                <div
-                  key={client.id}
-                  style={{
-                    padding: '20px',
-                    borderRadius: '12px',
-                    background: 'rgba(0, 0, 0, 0.3)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: '16px',
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#e8eef7' }}>
-                        {client.displayName}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: '0.72rem',
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          background: 'rgba(19, 194, 150, 0.15)',
-                          color: '#13c296',
-                          fontWeight: 700,
-                        }}
-                      >
-                        {client.assignedSite?.plan || 'Client Tier'}
-                      </span>
-                    </div>
+              {clients.map((client) => {
+                const active = generatedClientCodes[client.identifier];
+                const isCodeLive = active && Date.now() < active.expiresAt;
 
-                    <div style={{ fontSize: '0.825rem', color: '#a8b1c1' }}>
-                      Login Identifier: <strong style={{ color: '#e8eef7' }}>{client.identifier}</strong> (No email required)
-                    </div>
-
-                    {client.assignedSite && (
-                      <div style={{ fontSize: '0.8rem', color: '#717d91' }}>
-                        Dedicated Site: <a href={client.assignedSite.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2dd4bf', textDecoration: 'underline' }}>{client.assignedSite.url} ↗</a>
+                return (
+                  <div
+                    key={client.id}
+                    style={{
+                      padding: '20px',
+                      borderRadius: '12px',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '16px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#e8eef7' }}>
+                          {client.displayName}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            background: 'rgba(19, 194, 150, 0.15)',
+                            color: '#13c296',
+                            fontWeight: 700,
+                          }}
+                        >
+                          {client.assignedSite?.plan || 'Client Tier'}
+                        </span>
                       </div>
-                    )}
-                  </div>
 
-                  {/* Token Delivery Box */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div
-                      style={{
-                        padding: '10px 16px',
-                        borderRadius: '8px',
-                        background: '#0e1113',
-                        border: '1px solid rgba(19, 194, 150, 0.4)',
-                        fontFamily: 'monospace',
-                        fontSize: '0.9rem',
-                        fontWeight: 700,
-                        color: '#13c296',
-                        letterSpacing: '0.05em',
-                      }}
-                    >
-                      {client.token}
+                      <div style={{ fontSize: '0.825rem', color: '#a8b1c1' }}>
+                        Login Identifier: <strong style={{ color: '#e8eef7' }}>{client.identifier}</strong> (no email required)
+                      </div>
+
+                      {client.assignedSite && (
+                        <div style={{ fontSize: '0.8rem', color: '#717d91' }}>
+                          Scoped Site: <a href={client.assignedSite.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2dd4bf', textDecoration: 'underline' }}>{client.assignedSite.url} ↗</a>
+                        </div>
+                      )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleCopyToken(client.token, client.id)}
-                      style={{
-                        padding: '10px 16px',
-                        borderRadius: '8px',
-                        background: copiedToken === client.id ? '#13c296' : 'rgba(255, 255, 255, 0.08)',
-                        color: copiedToken === client.id ? '#0b0f11' : '#e8eef7',
-                        fontWeight: 700,
-                        fontSize: '0.8rem',
-                        border: 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      {copiedToken === client.id ? '✓ Copied Token!' : 'Copy Token for Client'}
-                    </button>
+                    {/* Token Generator Controls */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {isCodeLive ? (
+                        <>
+                          <div
+                            style={{
+                              padding: '10px 18px',
+                              borderRadius: '8px',
+                              background: '#0e1113',
+                              border: '1px solid #13c296',
+                              fontFamily: 'monospace',
+                              fontSize: '1.25rem',
+                              fontWeight: 800,
+                              color: '#13c296',
+                              letterSpacing: '0.2em',
+                            }}
+                          >
+                            {active.code}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleCopyCode(active.code, client.id)}
+                            style={{
+                              padding: '10px 18px',
+                              borderRadius: '999px',
+                              background: copiedToken === client.id ? '#13c296' : 'rgba(255, 255, 255, 0.08)',
+                              color: copiedToken === client.id ? '#0b0f11' : '#e8eef7',
+                              fontWeight: 700,
+                              fontSize: '0.8rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontFamily: 'Quicksand, sans-serif',
+                            }}
+                          >
+                            {copiedToken === client.id ? '✓ Copied!' : 'Copy 4-Digit Code'}
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleGenerateCodeForClient(client.identifier)}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: '999px',
+                            background: 'linear-gradient(135deg, #13c296, #2dd4bf)',
+                            color: '#0b0f11',
+                            fontWeight: 800,
+                            fontSize: '0.825rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontFamily: 'Quicksand, sans-serif',
+                            boxShadow: '0 4px 12px rgba(19, 194, 150, 0.25)',
+                          }}
+                        >
+                          Generate 4-Digit Code (10m)
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -405,7 +460,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div style={{ fontSize: '0.75rem', color: '#717d91', textTransform: 'uppercase', fontWeight: 700 }}>
                   Hero Identity
                 </div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 800, marginTop: '4px', color: '#e8eef7' }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 700, marginTop: '4px', color: '#e8eef7' }}>
                   {heroProfile.name}
                 </div>
                 <div style={{ fontSize: '0.825rem', color: '#13c296', marginTop: '2px' }}>

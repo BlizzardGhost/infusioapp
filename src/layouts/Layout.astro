@@ -5,8 +5,8 @@ interface Props {
 }
 
 const {
-  title = 'Infusio Studio | Headless CMS Architecture',
-  description = 'White-labeled Git-based Headless CMS integrated into Astro SSR, powered by Vercel and Generative AI.',
+  title = 'INFUSIO — Human-first AI systems',
+  description = 'We brew clarity: fast sites, ethical AI, and a calm cockpit for your business.',
 } = Astro.props;
 ---
 
@@ -25,12 +25,13 @@ const {
     <link rel="stylesheet" href="/src/styles/global.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Authentic Infusio Typography: Quicksand -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
   </head>
-  <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+  <body>
     <slot />
   </body>
 </html>

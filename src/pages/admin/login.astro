@@ -1,14 +1,14 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { BrandLogo } from '../../../cms/components/BrandLogo';
+import { getUserBySession } from '../../../cms/auth/users';
 
 export const prerender = false;
 
-// If already authenticated with a valid token, redirect directly to /admin
-import { getUserByToken } from '../../../cms/auth/users';
-const currentToken = Astro.cookies.get('infusio_auth_token')?.value;
-if (currentToken) {
-  const existingUser = getUserByToken(currentToken);
+// If already authenticated with a valid session, redirect to /admin
+const currentSession = Astro.cookies.get('infusio_auth_token')?.value;
+if (currentSession) {
+  const existingUser = getUserBySession(currentSession);
   if (existingUser) {
     return Astro.redirect('/admin');
   }
@@ -17,119 +17,264 @@ if (currentToken) {
 
 <Layout title="Sign In | Infusio Studio CMS Portal">
   <div
-    style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #0e1113; padding: 24px; box-sizing: border-box;"
+    style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #0e1113; padding: 24px; box-sizing: border-box; font-family: 'Quicksand', system-ui, -apple-system, sans-serif;"
   >
-    {/* Card Container */}
+    {/* Glass Card Container matching https://infusio-site.vercel.app/ */}
     <div
-      style="width: 100%; max-width: 440px; padding: 40px; border-radius: 20px; background: #14191d; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); box-sizing: border-box;"
+      style="width: 100%; max-width: 440px; padding: 38px; border-radius: 20px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(255, 255, 255, 0.10); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45); box-sizing: border-box; backdrop-filter: blur(16px);"
     >
       {/* Brand Header */}
-      <div style="text-align: center; margin-bottom: 32px;">
-        <div style="display: flex; justify-content: center; margin-bottom: 16px;">
+      <div style="text-align: center; margin-bottom: 28px;">
+        <div style="display: flex; justify-content: center; margin-bottom: 14px;">
           <BrandLogo size="lg" />
         </div>
-        <h1 style="font-size: 1.45rem; font-weight: 800; color: #e8eef7; margin: 0 0 6px 0; letter-spacing: -0.02em;">
+        <h1 style="font-size: 1.6rem; font-weight: 700; color: #e8eef7; margin: 0 0 6px 0; letter-spacing: -0.01em;">
           Access Portal
         </h1>
-        <p style="margin: 0; font-size: 0.85rem; color: #a8b1c1;">
-          Passwordless security token authentication
+        <p style="margin: 0; font-size: 0.875rem; color: #a8b1c1;">
+          Passwordless 4-digit code authentication
         </p>
       </div>
 
-      {/* Error Message Alert */}
+      {/* Alert Banner */}
       <div
-        id="loginErrorAlert"
-        style="display: none; padding: 12px 16px; border-radius: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; font-size: 0.825rem; margin-bottom: 20px;"
+        id="loginAlert"
+        style="display: none; padding: 12px 16px; border-radius: 10px; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.4;"
       ></div>
 
-      {/* Login Form */}
-      <form id="tokenLoginForm" style="display: flex; flex-direction: column; gap: 18px;">
-        <div>
-          <label style="display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #a8b1c1; margin-bottom: 6px;">
-            Account Identifier
-          </label>
-          <input
-            id="identifierInput"
-            type="text"
-            required
-            autocomplete="username"
-            placeholder="e.g. boris@computacionintegral.com or test@sperling"
-            style="width: 100%; padding: 12px 14px; border-radius: 8px; background: #0e1113; border: 1px solid rgba(255, 255, 255, 0.12); color: #e8eef7; font-size: 0.9rem; box-sizing: border-box; outline: none; transition: border 0.2s;"
-          />
+      {/* STEP 1: REQUEST CODE */}
+      <div id="stepRequestCode">
+        <form id="requestCodeForm" style="display: flex; flex-direction: column; gap: 18px;">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #a8b1c1; margin-bottom: 8px;">
+              Account Identifier
+            </label>
+            <input
+              id="identifierInput"
+              type="text"
+              required
+              autocomplete="username"
+              placeholder="Enter your email or client ID"
+              style="width: 100%; padding: 13px 16px; border-radius: 10px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.12); color: #e8eef7; font-size: 0.95rem; font-family: 'Quicksand', sans-serif; box-sizing: border-box; outline: none; transition: border-color 0.2s, box-shadow 0.2s;"
+            />
+          </div>
+
+          <button
+            id="requestCodeBtn"
+            type="submit"
+            class="btn btn-primary"
+            style="width: 100%; padding: 13px; font-size: 0.95rem; margin-top: 4px;"
+          >
+            Send 4-Digit Code →
+          </button>
+        </form>
+      </div>
+
+      {/* STEP 2: VERIFY 4-DIGIT CODE */}
+      <div id="stepVerifyCode" style="display: none;">
+        <div style="margin-bottom: 16px; padding: 12px 14px; border-radius: 10px; background: rgba(19, 194, 150, 0.1); border: 1px solid rgba(19, 194, 150, 0.25); color: #2dd4bf; font-size: 0.825rem;">
+          <span id="targetIdentifierDisplay" style="font-weight: 700;"></span>
+          <div style="font-size: 0.75rem; color: #a8b1c1; margin-top: 2px;">
+            Code is valid for 10 minutes.
+          </div>
         </div>
 
-        <div>
-          <label style="display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #a8b1c1; margin-bottom: 6px;">
-            Security Access Token
-          </label>
-          <input
-            id="tokenInput"
-            type="text"
-            required
-            autocomplete="off"
-            placeholder="e.g. INF-ADMIN-9482-7103"
-            style="width: 100%; padding: 12px 14px; border-radius: 8px; background: #0e1113; border: 1px solid rgba(255, 255, 255, 0.12); color: #13c296; font-family: monospace; font-size: 0.95rem; font-weight: 600; box-sizing: border-box; outline: none; transition: border 0.2s;"
-          />
-        </div>
+        <form id="verifyCodeForm" style="display: flex; flex-direction: column; gap: 18px;">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #a8b1c1; margin-bottom: 8px;">
+              Enter 4-Digit Security Code
+            </label>
+            <input
+              id="codeInput"
+              type="text"
+              required
+              maxlength="4"
+              pattern="[0-9]{4}"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              placeholder="••••"
+              style="width: 100%; padding: 14px; text-align: center; font-size: 1.8rem; font-weight: 700; letter-spacing: 0.3em; font-family: 'JetBrains Mono', monospace; border-radius: 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(19, 194, 150, 0.4); color: #13c296; box-sizing: border-box; outline: none;"
+            />
+          </div>
 
-        <button
-          id="submitLoginBtn"
-          type="submit"
-          style="width: 100%; padding: 13px; border-radius: 8px; background: linear-gradient(135deg, #13c296 0%, #2dd4bf 100%); color: #0b0f11; font-weight: 800; font-size: 0.925rem; border: none; cursor: pointer; margin-top: 8px; box-shadow: 0 4px 16px rgba(19, 194, 150, 0.35); transition: opacity 0.2s;"
-        >
-          Verify Token & Enter Workspace →
-        </button>
-      </form>
+          <button
+            id="verifyCodeBtn"
+            type="submit"
+            class="btn btn-primary"
+            style="width: 100%; padding: 13px; font-size: 0.95rem;"
+          >
+            Verify Code & Enter Workspace →
+          </button>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; margin-top: 6px;">
+            <button
+              id="backToStep1Btn"
+              type="button"
+              style="background: transparent; border: none; color: #a8b1c1; text-decoration: underline; cursor: pointer; padding: 0; font-family: 'Quicksand', sans-serif;"
+            >
+              ← Change identifier
+            </button>
+            <button
+              id="resendCodeBtn"
+              type="button"
+              style="background: transparent; border: none; color: #2dd4bf; cursor: pointer; padding: 0; font-weight: 600; font-family: 'Quicksand', sans-serif;"
+            >
+              Resend code
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* Security Guidance Footer */}
       <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center;">
-        <p style="margin: 0; font-size: 0.75rem; color: #717d91; line-height: 1.5;">
-          Access tokens are cryptographically generated and issued directly by your administrator. Passwords and public signups are permanently disabled.
+        <p style="margin: 0; font-size: 0.78rem; color: #717d91; line-height: 1.5;">
+          Tokens expire automatically after 10 minutes. Microsoft Authenticator compatible. Passwords and public registrations are permanently disabled.
         </p>
       </div>
     </div>
   </div>
 
   <script>
-    const form = document.getElementById('tokenLoginForm');
+    let activeIdentifier = '';
+
+    const stepRequest = document.getElementById('stepRequestCode') as HTMLDivElement;
+    const stepVerify = document.getElementById('stepVerifyCode') as HTMLDivElement;
+    const alertBox = document.getElementById('loginAlert') as HTMLDivElement;
+
+    const requestForm = document.getElementById('requestCodeForm') as HTMLFormElement;
     const identifierInput = document.getElementById('identifierInput') as HTMLInputElement;
-    const tokenInput = document.getElementById('tokenInput') as HTMLInputElement;
-    const submitBtn = document.getElementById('submitLoginBtn') as HTMLButtonElement;
-    const errorAlert = document.getElementById('loginErrorAlert') as HTMLDivElement;
+    const requestCodeBtn = document.getElementById('requestCodeBtn') as HTMLButtonElement;
 
-    form?.addEventListener('submit', async (e) => {
+    const verifyForm = document.getElementById('verifyCodeForm') as HTMLFormElement;
+    const codeInput = document.getElementById('codeInput') as HTMLInputElement;
+    const verifyCodeBtn = document.getElementById('verifyCodeBtn') as HTMLButtonElement;
+    const targetDisplay = document.getElementById('targetIdentifierDisplay') as HTMLSpanElement;
+
+    const backBtn = document.getElementById('backToStep1Btn') as HTMLButtonElement;
+    const resendBtn = document.getElementById('resendCodeBtn') as HTMLButtonElement;
+
+    function showAlert(msg: string, isError = true) {
+      alertBox.textContent = msg;
+      alertBox.style.display = 'block';
+      alertBox.style.background = isError ? 'rgba(239, 68, 68, 0.15)' : 'rgba(19, 194, 150, 0.15)';
+      alertBox.style.border = isError ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(19, 194, 150, 0.3)';
+      alertBox.style.color = isError ? '#f87171' : '#2dd4bf';
+    }
+
+    function hideAlert() {
+      alertBox.style.display = 'none';
+    }
+
+    // Step 1: Request Code
+    requestForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!identifierInput.value || !tokenInput.value) return;
+      const val = identifierInput.value.trim();
+      if (!val) return;
 
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Authenticating security token...';
-      errorAlert.style.display = 'none';
+      hideAlert();
+      requestCodeBtn.disabled = true;
+      requestCodeBtn.textContent = 'Generating 4-digit token...';
 
       try {
-        const response = await fetch('/api/auth/login', {
+        const res = await fetch('/api/auth/request-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: val }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          activeIdentifier = val;
+          targetDisplay.textContent = `Security code sent for ${activeIdentifier}`;
+          stepRequest.style.display = 'none';
+          stepVerify.style.display = 'block';
+          codeInput.value = '';
+          codeInput.focus();
+
+          if (data.clientDispatchCode) {
+            showAlert(`[Access Token Ready]: Enter ${data.clientDispatchCode} to access your workspace.`, false);
+          } else {
+            showAlert(data.message || '4-digit code dispatched. Valid for 10 minutes.', false);
+          }
+        } else {
+          showAlert(data.error || 'Account identifier not found.', true);
+        }
+      } catch (err) {
+        showAlert('Network communication error. Please try again.', true);
+      } finally {
+        requestCodeBtn.disabled = false;
+        requestCodeBtn.textContent = 'Send 4-Digit Code →';
+      }
+    });
+
+    // Step 2: Verify Code
+    verifyForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const code = codeInput.value.trim();
+      if (!code || code.length !== 4) {
+        showAlert('Please enter the complete 4-digit code.', true);
+        return;
+      }
+
+      hideAlert();
+      verifyCodeBtn.disabled = true;
+      verifyCodeBtn.textContent = 'Verifying security code...';
+
+      try {
+        const res = await fetch('/api/auth/verify-code', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            identifier: identifierInput.value.trim(),
-            token: tokenInput.value.trim(),
+            identifier: activeIdentifier,
+            code,
           }),
         });
 
-        const data = await response.json();
+        const data = await res.json();
 
-        if (response.ok && data.success) {
+        if (res.ok && data.success) {
           window.location.href = data.redirect || '/admin';
         } else {
-          errorAlert.textContent = data.error || 'Authentication rejected. Please check your credentials.';
-          errorAlert.style.display = 'block';
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Verify Token & Enter Workspace →';
+          showAlert(data.error || 'Invalid or expired 4-digit code.', true);
+          verifyCodeBtn.disabled = false;
+          verifyCodeBtn.textContent = 'Verify Code & Enter Workspace →';
         }
       } catch (err) {
-        errorAlert.textContent = 'Network or server communication error. Please try again.';
-        errorAlert.style.display = 'block';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Verify Token & Enter Workspace →';
+        showAlert('Verification failed due to a network error.', true);
+        verifyCodeBtn.disabled = false;
+        verifyCodeBtn.textContent = 'Verify Code & Enter Workspace →';
+      }
+    });
+
+    backBtn?.addEventListener('click', () => {
+      hideAlert();
+      stepVerify.style.display = 'none';
+      stepRequest.style.display = 'block';
+      identifierInput.focus();
+    });
+
+    resendBtn?.addEventListener('click', async () => {
+      if (!activeIdentifier) return;
+      resendBtn.textContent = 'Sending...';
+      try {
+        const res = await fetch('/api/auth/request-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: activeIdentifier }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (data.clientDispatchCode) {
+            showAlert(`[Access Token Ready]: Enter ${data.clientDispatchCode} to access your workspace.`, false);
+          } else {
+            showAlert('Fresh 4-digit code sent. Valid for 10 minutes.', false);
+          }
+        }
+      } catch {
+        showAlert('Failed to resend code.', true);
+      } finally {
+        resendBtn.textContent = 'Resend code';
       }
     });
   </script>

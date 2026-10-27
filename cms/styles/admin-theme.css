@@ -1,10 +1,12 @@
 /**
  * INFUSIO Global Theme & Custom Admin Design Tokens
- * Matcha Jade (#13c296) / Mint Foam (#2dd4bf) / Dark Matcha (#0e1113)
+ * Synchronized with https://infusio-site.vercel.app/
+ * Typography: Quicksand
  */
 
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
 :root {
-  /* Infusio Brand Design System */
   --bg: #0e1113;
   --bg-2: #0b0f11;
   --ink: #e8eef7;
@@ -26,7 +28,6 @@
   --theme-secondary: var(--accent);
   --theme-accent: var(--accent-2);
 
-  /* Surfaces & Elevations */
   --theme-elevation-0: #07090a;
   --theme-elevation-50: var(--bg-2);
   --theme-elevation-100: #14191d;
@@ -36,14 +37,13 @@
   --theme-elevation-400: #3b4651;
   --theme-elevation-500: var(--muted);
 
-  /* Semantics */
   --theme-success: #13c296;
   --theme-warning: #f59e0b;
   --theme-error: #ef4444;
   --theme-info: #2dd4bf;
 
-  --radius-sm: 6px;
-  --radius-md: 12px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
   --radius-lg: 16px;
   --radius-full: 9999px;
 
@@ -52,37 +52,19 @@
   --shadow-glow: 0 0 25px rgba(19, 194, 150, 0.25);
 }
 
-/* Light Theme Overrides */
-[data-theme='light'] {
-  --bg: #f9fbfe;
-  --bg-2: #f2f7fd;
-  --ink: #0a0f14;
-  --ink-weak: #0a1016;
-  --muted: #4a5564;
-
-  --theme-bg: var(--bg);
-  --theme-text: var(--ink);
-  --theme-text-muted: var(--muted);
-
-  --theme-elevation-0: #ffffff;
-  --theme-elevation-50: var(--bg-2);
-  --theme-elevation-100: #e5edf5;
-  --theme-elevation-150: rgba(10, 15, 20, 0.08);
-  --theme-elevation-200: #d0dce7;
-  --theme-elevation-300: #b0c2d3;
-}
-
-/* Global Reset */
 body, html {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Quicksand', system-ui, -apple-system, sans-serif !important;
   background-color: var(--theme-bg) !important;
   color: var(--theme-text) !important;
   -webkit-font-smoothing: antialiased;
 }
 
-/* =========================================================================
-   PROVIDER BRANDING STRIP (Strip Payload, Decap, or default CMS brand marks)
-   ========================================================================= */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Quicksand', system-ui, -apple-system, sans-serif !important;
+  font-weight: 700 !important;
+}
+
+/* Provider Branding Erasure */
 .payload-logo,
 .payload-icon,
 .default-cms-logo,
@@ -101,6 +83,7 @@ footer a[href*="tinacms.org"],
 
 /* Form Controls */
 input, textarea, select {
+  font-family: 'Quicksand', sans-serif !important;
   background-color: var(--theme-elevation-100) !important;
   border: 1px solid var(--theme-elevation-150) !important;
   color: var(--theme-text) !important;
@@ -114,16 +97,17 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 3px rgba(19, 194, 150, 0.25) !important;
 }
 
-/* Custom Buttons */
+/* Infusio Buttons */
 button.btn,
 .btn--primary,
 .button--primary {
+  font-family: 'Quicksand', sans-serif !important;
   background: linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%) !important;
   color: #0b0f11 !important;
-  font-weight: 700 !important;
-  border-radius: var(--radius-sm) !important;
+  font-weight: 800 !important;
+  border-radius: 999px !important;
   border: none !important;
-  padding: 10px 20px !important;
+  padding: 12px 24px !important;
   box-shadow: 0 4px 14px 0 rgba(19, 194, 150, 0.35) !important;
   transition: var(--transition-smooth) !important;
 }
@@ -133,14 +117,4 @@ button.btn:hover,
 .button--primary:hover {
   transform: translateY(-1px) !important;
   box-shadow: 0 6px 20px 0 rgba(19, 194, 150, 0.5) !important;
-}
-
-/* Cards & Collection Lists */
-.card,
-.collection-list,
-.table-wrap {
-  background-color: var(--theme-elevation-100) !important;
-  border: 1px solid var(--theme-elevation-150) !important;
-  border-radius: var(--radius-md) !important;
-  box-shadow: var(--shadow-elevation) !important;
 }
