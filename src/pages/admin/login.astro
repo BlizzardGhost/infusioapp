@@ -136,6 +136,7 @@ if (currentSession) {
 
   <script>
     let activeIdentifier = '';
+    let cachedChallengeToken = '';
 
     const stepRequest = document.getElementById('stepRequestCode') as HTMLDivElement;
     const stepVerify = document.getElementById('stepVerifyCode') as HTMLDivElement;
@@ -186,14 +187,15 @@ if (currentSession) {
 
         if (res.ok && data.success) {
           activeIdentifier = val;
-          targetDisplay.textContent = `Security code sent for ${activeIdentifier}`;
+          cachedChallengeToken = data.challengeToken || '';
+          targetDisplay.textContent = `Security code generated for ${activeIdentifier}`;
           stepRequest.style.display = 'none';
           stepVerify.style.display = 'block';
           codeInput.value = '';
           codeInput.focus();
 
           if (data.clientDispatchCode) {
-            showAlert(`[Access Token Ready]: Enter ${data.clientDispatchCode} to access your workspace.`, false);
+            showAlert(`[Access Code]: Enter ${data.clientDispatchCode} to access your workspace.`, false);
           } else {
             showAlert(data.message || '4-digit code dispatched. Valid for 10 minutes.', false);
           }
@@ -228,6 +230,7 @@ if (currentSession) {
           body: JSON.stringify({
             identifier: activeIdentifier,
             code,
+            challengeToken: cachedChallengeToken,
           }),
         });
 
@@ -265,8 +268,9 @@ if (currentSession) {
         });
         const data = await res.json();
         if (data.success) {
+          cachedChallengeToken = data.challengeToken || cachedChallengeToken;
           if (data.clientDispatchCode) {
-            showAlert(`[Access Token Ready]: Enter ${data.clientDispatchCode} to access your workspace.`, false);
+            showAlert(`[Access Code]: Enter ${data.clientDispatchCode} to access your workspace.`, false);
           } else {
             showAlert('Fresh 4-digit code sent. Valid for 10 minutes.', false);
           }

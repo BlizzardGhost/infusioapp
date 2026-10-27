@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { verifyFourDigitToken } from '../../../../cms/auth/tokens';
+import { verifyChallengeToken } from '../../../../cms/auth/tokens';
 import { createSessionToken } from '../../../../cms/auth/users';
 
 export const prerender = false;
@@ -7,7 +7,7 @@ export const prerender = false;
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const body = await request.json().catch(() => ({}));
-    const { identifier, code } = body;
+    const { identifier, code, challengeToken: bodyChallenge } = body;
 
     if (!identifier || !code) {
       return new Response(
@@ -16,7 +16,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    const verification = verifyFourDigitToken(identifier, code);
+    // Read challenge from cookie or request body
+    const challenge = cookies.get('infusio_otp_challenge')?.value || bodyChallenge;
+
+    const verification = verifyChallengeToken(identifier, code, challenge);
 
     if (!verification.valid || !verification.user) {
       return new Response(
@@ -25,7 +28,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    // Set secure authentication cookie
+    // Clear challenge cookie
+    cookies.delete('infusio_otp_challenge', { path: '/' });
+
+    // Set secure authentication session cookie
     const sessionToken = createSessionToken(verification.user);
 
     cookies.set('infusio_auth_token', sessionToken, {
