@@ -9,15 +9,14 @@ export interface BrandLogoProps {
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   className = '',
   size = 'md',
-  darkMode = true,
 }) => {
   const heightMap = {
-    sm: '28px',
-    md: '38px',
-    lg: '48px',
+    sm: 28,
+    md: 38,
+    lg: 48,
   };
 
-  const currentHeight = heightMap[size] || '38px';
+  const currentHeight = heightMap[size] || 38;
 
   return (
     <div
@@ -30,70 +29,76 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         textDecoration: 'none',
       }}
     >
-      {/* Primary Brand Graphic Override */}
-      <div
+      {/* Official Infusio WebP Logo Asset */}
+      <img
+        src="/assets/brand-logo.webp"
+        alt="Infusio"
         style={{
-          width: currentHeight,
-          height: currentHeight,
-          borderRadius: '10px',
-          background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
-          display: 'flex',
+          height: `${currentHeight}px`,
+          width: 'auto',
+          objectFit: 'contain',
+        }}
+        onError={(e) => {
+          // If webp fails to render in any specific environment, display fallback SVG badge
+          const target = e.currentTarget as HTMLElement;
+          target.style.display = 'none';
+          const fallback = target.nextElementSibling as HTMLElement;
+          if (fallback) fallback.style.display = 'flex';
+        }}
+      />
+
+      {/* Fallback & Monogram Badge (Matcha Jade & Mint Foam) */}
+      <div
+        className="infusio-brand-fallback"
+        style={{
+          display: 'none',
           alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.39)',
-          flexShrink: 0,
+          gap: '10px',
         }}
       >
-        <svg
-          width="60%"
-          height="60%"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#ffffff"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
-        <span
+        <div
           style={{
-            fontSize: size === 'sm' ? '1rem' : size === 'lg' ? '1.4rem' : '1.18rem',
-            fontWeight: 800,
-            letterSpacing: '-0.03em',
-            color: darkMode ? '#F8FAFC' : '#0F172A',
-            fontFamily:
-              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            width: `${currentHeight}px`,
+            height: `${currentHeight}px`,
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, #13c296 0%, #2dd4bf 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 16px rgba(19, 194, 150, 0.35)',
           }}
         >
-          INFUSIO
-        </span>
-        <span
-          style={{
-            fontSize: size === 'sm' ? '0.62rem' : '0.68rem',
-            fontWeight: 700,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: '#8B5CF6',
-            marginTop: '2px',
-            fontFamily:
-              'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          }}
-        >
-          STUDIO CMS
-        </span>
+          <img
+            src="/assets/brand-icon.svg"
+            alt="Infusio Icon"
+            style={{ width: '65%', height: '65%' }}
+          />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+          <span
+            style={{
+              fontSize: size === 'sm' ? '1rem' : size === 'lg' ? '1.4rem' : '1.18rem',
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+              color: '#e8eef7',
+              fontFamily: 'system-ui, -apple-system, sans-serif',
+            }}
+          >
+            INFUSIO
+          </span>
+          <span
+            style={{
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: '#2dd4bf',
+            }}
+          >
+            ENTERPRISE CMS
+          </span>
+        </div>
       </div>
-
-      {/* Hidden fallback image referencing public asset path for CMS asset inspection */}
-      <img
-        src="/assets/brand-logo.png"
-        alt="Infusio Brand Logo"
-        style={{ display: 'none' }}
-        aria-hidden="true"
-      />
     </div>
   );
 };

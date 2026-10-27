@@ -3,30 +3,26 @@ import { BrandLogo } from './BrandLogo';
 
 export interface CustomNavProps {
   currentPath?: string;
-  collections?: Array<{
-    slug: string;
-    label: string;
-    count?: number;
-    icon?: string;
-  }>;
 }
 
 export const CustomNav: React.FC<CustomNavProps> = ({
   currentPath = '/admin',
-  collections = [
-    { slug: 'articles', label: 'Articles & Insights', count: 12, icon: 'document' },
-    { slug: 'pages', label: 'Landing Pages', count: 4, icon: 'layers' },
-    { slug: 'media', label: 'Asset Library', count: 28, icon: 'image' },
-  ],
 }) => {
+  const managedRepos = [
+    { id: 'hero-wall-mvp', label: 'Hero Wall MVP', repo: 'BlizzardGhost/hero-wall-mvp', tag: 'Test Active', icon: '⚡' },
+    { id: 'infusio-site', label: 'Infusio Live Site', repo: 'BlizzardGhost/infusio-site', tag: 'Astro SSR', icon: '🌐' },
+    { id: 'camp-david-mvp', label: 'Camp David MVP', repo: 'BlizzardGhost/camp-david-mvp', tag: 'App', icon: '🏕️' },
+    { id: 'kidslab-lat', label: 'KidsLab LAT', repo: 'BlizzardGhost/kidslab-lat-website', tag: 'Web', icon: '🧪' },
+  ];
+
   return (
     <aside
       className="infusio-admin-nav"
       style={{
         width: '280px',
         minHeight: '100vh',
-        background: 'var(--theme-elevation-50, #0B0F19)',
-        borderRight: '1px solid var(--theme-elevation-150, rgba(255, 255, 255, 0.08))',
+        background: 'var(--bg-2, #0b0f11)',
+        borderRight: '1px solid var(--surface-2, rgba(255, 255, 255, 0.08))',
         display: 'flex',
         flexDirection: 'column',
         padding: '24px 16px',
@@ -34,158 +30,181 @@ export const CustomNav: React.FC<CustomNavProps> = ({
       }}
     >
       {/* Brand Header */}
-      <div style={{ paddingBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ paddingBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <a href="/admin" style={{ textDecoration: 'none' }}>
           <BrandLogo size="md" />
         </a>
       </div>
 
-      {/* Workspace Indicator */}
+      {/* Antigravity Agent Connection Badge */}
       <div
         style={{
           marginTop: '16px',
-          padding: '8px 12px',
-          borderRadius: '8px',
-          background: 'rgba(99, 102, 241, 0.08)',
-          border: '1px solid rgba(99, 102, 241, 0.2)',
+          padding: '10px 12px',
+          borderRadius: '10px',
+          background: 'rgba(19, 194, 150, 0.08)',
+          border: '1px solid rgba(19, 194, 150, 0.25)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94A3B8' }}>
-            Environment
+          <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#a8b1c1' }}>
+            Agent Control Plane
           </span>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#A5B4FC' }}>
-            Production (Vercel)
+          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#2dd4bf' }}>
+            Antigravity Online
           </span>
         </div>
         <span
           style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
             fontSize: '0.65rem',
-            padding: '2px 6px',
-            borderRadius: '4px',
-            background: '#10B981',
-            color: '#FFFFFF',
-            fontWeight: 700,
+            padding: '2px 8px',
+            borderRadius: '999px',
+            background: '#13c296',
+            color: '#0b0f11',
+            fontWeight: 800,
           }}
         >
-          LIVE
+          CONNECTED
         </span>
       </div>
 
       {/* Navigation Groups */}
-      <div style={{ marginTop: '28px', flex: 1 }}>
+      <div style={{ marginTop: '24px', flex: 1 }}>
+        {/* Managed GitHub Repos Section */}
         <div
           style={{
             fontSize: '0.7rem',
             fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
-            color: '#64748B',
+            color: '#717d91',
             marginBottom: '10px',
             paddingLeft: '8px',
           }}
         >
-          Content Collections
+          Managed Repositories
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {collections.map((col) => {
-            const isActive = currentPath.includes(col.slug);
-            return (
-              <a
-                key={col.slug}
-                href={`/admin/collections/${col.slug}`}
+          {managedRepos.map((item) => (
+            <a
+              key={item.id}
+              href={`/admin/repos/${item.id}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '9px 12px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                fontSize: '0.825rem',
+                fontWeight: 500,
+                transition: 'all 0.15s ease',
+                background: item.id === 'hero-wall-mvp' ? 'rgba(19, 194, 150, 0.12)' : 'transparent',
+                color: item.id === 'hero-wall-mvp' ? '#2dd4bf' : '#a8b1c1',
+                borderLeft: item.id === 'hero-wall-mvp' ? '3px solid #13c296' : '3px solid transparent',
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </span>
+              <span
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  textDecoration: 'none',
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  transition: 'all 0.15s ease',
-                  background: isActive ? 'linear-gradient(90deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.05) 100%)' : 'transparent',
-                  color: isActive ? '#FFFFFF' : '#94A3B8',
-                  borderLeft: isActive ? '3px solid #6366F1' : '3px solid transparent',
+                  fontSize: '0.65rem',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  background: item.id === 'hero-wall-mvp' ? '#13c296' : 'rgba(255,255,255,0.06)',
+                  color: item.id === 'hero-wall-mvp' ? '#0b0f11' : '#717d91',
+                  fontWeight: 700,
                 }}
               >
-                <span>{col.label}</span>
-                {col.count !== undefined && (
-                  <span
-                    style={{
-                      fontSize: '0.72rem',
-                      padding: '2px 8px',
-                      borderRadius: '12px',
-                      background: isActive ? '#6366F1' : 'rgba(255,255,255,0.06)',
-                      color: isActive ? '#FFFFFF' : '#64748B',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {col.count}
-                  </span>
-                )}
-              </a>
-            );
-          })}
+                {item.tag}
+              </span>
+            </a>
+          ))}
         </nav>
 
+        {/* Core Collections */}
         <div
           style={{
             fontSize: '0.7rem',
             fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
-            color: '#64748B',
-            marginTop: '28px',
+            color: '#717d91',
+            marginTop: '24px',
             marginBottom: '10px',
             paddingLeft: '8px',
           }}
         >
-          Automations & AI
+          Content & Data Schemas
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <a
-            href="/admin/ai-pipeline"
+            href="/admin/collections/hero-wall"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              padding: '10px 12px',
+              justifyContent: 'space-between',
+              padding: '9px 12px',
               borderRadius: '8px',
               textDecoration: 'none',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              color: '#C084FC',
-              background: 'rgba(192, 132, 252, 0.08)',
+              fontSize: '0.825rem',
+              fontWeight: 600,
+              color: '#e8eef7',
+              background: 'rgba(255, 255, 255, 0.04)',
             }}
           >
-            <span>⚡ AI Meta Generator</span>
+            <span>🛡️ Hero Wall Profile</span>
+            <span style={{ fontSize: '0.7rem', color: '#13c296' }}>RASS v38.7</span>
           </a>
+
           <a
-            href="/admin/github-sync"
+            href="/admin/collections/articles"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              padding: '10px 12px',
+              justifyContent: 'space-between',
+              padding: '9px 12px',
               borderRadius: '8px',
               textDecoration: 'none',
-              fontSize: '0.875rem',
+              fontSize: '0.825rem',
               fontWeight: 500,
-              color: '#94A3B8',
+              color: '#a8b1c1',
             }}
           >
-            <span>🐙 GitHub Sync Status</span>
+            <span>📝 Articles & Posts</span>
+            <span style={{ fontSize: '0.7rem', color: '#717d91' }}>AI Hooked</span>
+          </a>
+
+          <a
+            href="/admin/collections/pages"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '9px 12px',
+              borderRadius: '8px',
+              textDecoration: 'none',
+              fontSize: '0.825rem',
+              fontWeight: 500,
+              color: '#a8b1c1',
+            }}
+          >
+            <span>📄 Landing Pages</span>
           </a>
         </nav>
       </div>
 
-      {/* User Info / Agency Profile */}
+      {/* GitHub Account Badge */}
       <div
         style={{
           paddingTop: '16px',
@@ -200,23 +219,23 @@ export const CustomNav: React.FC<CustomNavProps> = ({
             width: '34px',
             height: '34px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
+            background: 'linear-gradient(135deg, #13c296, #2dd4bf)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontWeight: 700,
+            fontWeight: 800,
             fontSize: '0.85rem',
-            color: '#FFFFFF',
+            color: '#0b0f11',
           }}
         >
-          AD
+          BG
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#F1F5F9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            Agency Administrator
+          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#e8eef7', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            BlizzardGhost
           </span>
-          <span style={{ fontSize: '0.7rem', color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            admin@infusio.studio
+          <span style={{ fontSize: '0.7rem', color: '#717d91', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            github.com/BlizzardGhost
           </span>
         </div>
       </div>

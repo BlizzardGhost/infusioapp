@@ -4,6 +4,8 @@ import { buildConfig } from 'payload';
 import { sqliteAdapter } from '@payloadcms/db-sqlite';
 import { Articles } from './collections/Articles';
 import { Pages } from './collections/Pages';
+import { ManagedSites } from './collections/ManagedSites';
+import { HeroWall } from './collections/HeroWall';
 import { BrandLogo } from './components/BrandLogo';
 import { BrandIcon } from './components/BrandIcon';
 
@@ -21,7 +23,7 @@ export default buildConfig({
     },
     meta: {
       titleSuffix: '- Infusio Studio CMS',
-      favicon: '/assets/favicon.svg',
+      favicon: '/assets/brand-icon.svg',
       ogImage: '/assets/brand-logo.png',
     },
     custom: {
@@ -33,7 +35,7 @@ export default buildConfig({
       url: process.env.DATABASE_URI || 'file:./cms-storage.db',
     },
   }),
-  collections: [Articles, Pages],
+  collections: [Articles, Pages, ManagedSites, HeroWall],
   secret: process.env.PAYLOAD_SECRET || 'infusio-headless-secret-key-development',
   typescript: {
     outputFile: path.resolve(__dirname, './cms-types.ts'),

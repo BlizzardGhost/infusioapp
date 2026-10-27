@@ -16,31 +16,19 @@ export const BrandIcon: React.FC<BrandIconProps> = ({
         width: `${size}px`,
         height: `${size}px`,
         borderRadius: `${Math.round(size * 0.28)}px`,
-        background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+        background: 'linear-gradient(135deg, #13c296 0%, #2dd4bf 100%)',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        boxShadow: '0 2px 8px rgba(99, 102, 241, 0.35)',
+        boxShadow: '0 2px 10px rgba(19, 194, 150, 0.35)',
         flexShrink: 0,
+        overflow: 'hidden',
       }}
     >
-      <svg
-        width="60%"
-        height="60%"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <polyline points="20 6 9 17 4 12" />
-      </svg>
       <img
-        src="/assets/brand-logo-dark.png"
-        alt="Infusio Icon Asset"
-        style={{ display: 'none' }}
-        aria-hidden="true"
+        src="/assets/brand-icon.svg"
+        alt="Infusio Emblem"
+        style={{ width: '70%', height: '70%', objectFit: 'contain' }}
       />
     </div>
   );
