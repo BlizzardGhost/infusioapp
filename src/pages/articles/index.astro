@@ -1,0 +1,98 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { BrandLogo } from '../../../cms/components/BrandLogo';
+
+export const prerender = false;
+
+// Simulated CMS Data Store (demonstrating AI-enriched fields)
+const articles = [
+  {
+    slug: 'architecting-git-headless-cms',
+    title: 'Architecting a Git-Based Headless CMS on Astro and Vercel',
+    publishedAt: '2026-10-24',
+    excerpt: 'How modern engineering teams decouple content management using code-first schemas and Vercel edge runtime.',
+    metaTitle: 'Architecting Git-Based Headless CMS | Infusio Studio',
+    metaDescription: 'Complete guide to building and deploying code-first headless CMS architecture on Astro SSR with automatic generative AI enrichment.',
+    imageAltText: 'Modern architecture diagram displaying Astro SSR, Git repository, and Vercel edge nodes',
+    status: 'published',
+  },
+  {
+    slug: 'automating-seo-with-generative-ai-hooks',
+    title: 'Automating SEO Metadata Synthesis via CMS Lifecycle Hooks',
+    publishedAt: '2026-10-20',
+    excerpt: 'Eliminating editorial friction by generating search engine metadata and image alt descriptions on document persistence.',
+    metaTitle: 'Automating SEO with Generative AI Hooks | Infusio Studio',
+    metaDescription: 'Discover how beforeChange asynchronous hooks securely interface with generative AI models to populate missing metadata prior to save.',
+    imageAltText: 'Futuristic AI neural network automating metadata synthesis for digital content',
+    status: 'published',
+  },
+];
+---
+
+<Layout title="Articles & Insights | Infusio Studio CMS">
+  <div style="min-height: 100vh; display: flex; flex-direction: column;">
+    <!-- Header -->
+    <header style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(11, 15, 25, 0.85); backdrop-filter: blur(12px);">
+      <div style="max-width: 1200px; margin: 0 auto; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;">
+        <a href="/" style="display: flex; align-items: center; text-decoration: none;">
+          <BrandLogo size="md" />
+        </a>
+        <a href="/admin" style="font-size: 0.875rem; color: #818CF8; text-decoration: none; font-weight: 600;">
+          ← Admin Dashboard
+        </a>
+      </div>
+    </header>
+
+    <main style="flex: 1; max-width: 1000px; margin: 0 auto; padding: 64px 24px; width: 100%; box-sizing: border-box;">
+      <div style="margin-bottom: 48px;">
+        <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.02em;">
+          Articles & Publications
+        </h1>
+        <p style="color: #94A3B8; font-size: 1.05rem;">
+          Server-side rendered editorial stories powered by the Infusio code-first CMS pipeline.
+        </p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+        {articles.map((article) => (
+          <article
+            style="padding: 28px; border-radius: 14px; background: #111827; border: 1px solid rgba(255, 255, 255, 0.08); transition: transform 0.2s;"
+          >
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <span style="font-size: 0.75rem; color: #64748B; font-family: monospace;">
+                {article.publishedAt}
+              </span>
+              <span style="font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); color: #34D399; font-weight: 600;">
+                {article.status.toUpperCase()}
+              </span>
+              <span style="font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; background: rgba(139, 92, 246, 0.15); color: #C084FC; font-weight: 600;">
+                AI ENRICHED
+              </span>
+            </div>
+
+            <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; color: #FFFFFF;">
+              {article.title}
+            </h2>
+
+            <p style="color: #94A3B8; font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px;">
+              {article.excerpt}
+            </p>
+
+            {/* AI Generated Metadata Inspection Box */}
+            <div style="padding: 14px 18px; border-radius: 8px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.78rem; display: flex; flex-direction: column; gap: 6px;">
+              <div style="color: #A5B4FC;">
+                <strong>SEO Meta Title:</strong> {article.metaTitle}
+              </div>
+              <div style="color: #94A3B8;">
+                <strong>SEO Meta Description:</strong> {article.metaDescription}
+              </div>
+              <div style="color: #64748B;">
+                <strong>Image Alt Text:</strong> {article.imageAltText}
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </main>
+  </div>
+</Layout>

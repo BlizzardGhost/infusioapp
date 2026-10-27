@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" fill="none">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="50%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#EC4899" />
+    </linearGradient>
+  </defs>
+  <!-- Agency Monogram Emblem -->
+  <rect x="8" y="12" width="56" height="56" rx="14" fill="url(#brandGrad)" />
+  <path d="M26 40L33 47L46 32" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Typography -->
+  <text x="76" y="44" font-family="system-ui, -apple-system, 'SF Pro Display', Inter, sans-serif" font-size="26" font-weight="800" letter-spacing="-0.5" fill="currentColor">
+    INFUSIO
+  </text>
+  <text x="78" y="58" font-family="system-ui, -apple-system, Inter, sans-serif" font-size="10" font-weight="600" letter-spacing="2" fill="#8B5CF6">
+    STUDIO CMS
+  </text>
+</svg>

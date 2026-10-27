@@ -1,0 +1,116 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { BrandLogo } from '../../cms/components/BrandLogo';
+
+// Server-side rendering execution timestamp & edge metrics
+const serverRenderTime = new Date().toUTCString();
+const deploymentEnv = process.env.VERCEL_ENV || 'development';
+const gitCommitSha = process.env.VERCEL_GIT_COMMIT_SHA || 'local-preview';
+---
+
+<Layout title="Infusio Studio | White-Labeled Headless CMS & Astro SSR">
+  <div style="min-height: 100vh; display: flex; flex-direction: column;">
+    <!-- Navigation Bar -->
+    <header style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(11, 15, 25, 0.85); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 50;">
+      <div style="max-width: 1200px; margin: 0 auto; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;">
+        <a href="/" style="display: flex; align-items: center; text-decoration: none;">
+          <BrandLogo size="md" />
+        </a>
+
+        <nav style="display: flex; align-items: center; gap: 24px;">
+          <a href="/articles" style="color: #94A3B8; font-size: 0.9rem; font-weight: 500; transition: color 0.2s;">
+            Articles
+          </a>
+          <a href="/admin" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 8px; background: linear-gradient(135deg, #6366F1, #8B5CF6); color: #FFFFFF; font-size: 0.875rem; font-weight: 600; text-decoration: none; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);">
+            Open Admin Dashboard ⚡
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <main style="flex: 1; max-width: 1200px; margin: 0 auto; padding: 72px 24px 48px; width: 100%; box-sizing: border-box;">
+      <div style="text-align: center; max-width: 800px; margin: 0 auto 64px;">
+        <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 20px; background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.3); color: #A5B4FC; font-size: 0.8rem; font-weight: 600; margin-bottom: 24px;">
+          <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #34D399; box-shadow: 0 0 8px #34D399;"></span>
+          Astro SSR + Git-Based Headless CMS • Vercel Edge Ready
+        </div>
+
+        <h1 style="font-size: clamp(2.5rem, 5vw, 3.8rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 24px; background: linear-gradient(135deg, #FFFFFF 30%, #94A3B8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+          White-Labeled Content Architecture
+        </h1>
+
+        <p style="font-size: 1.125rem; color: #94A3B8; line-height: 1.6; margin-bottom: 36px;">
+          Configured entirely in TypeScript code. Engineered with automatic generative AI lifecycle enrichment, full provider branding overrides, and high-performance serverless deployment.
+        </p>
+
+        <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+          <a href="/admin" style="padding: 14px 28px; border-radius: 10px; background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); color: #FFFFFF; font-weight: 600; font-size: 0.95rem; text-decoration: none; box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);">
+            Enter White-Labeled CMS
+          </a>
+          <a href="https://github.com" target="_blank" style="padding: 14px 28px; border-radius: 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); color: #F1F5F9; font-weight: 600; font-size: 0.95rem; text-decoration: none;">
+            Explore Git Schemas
+          </a>
+        </div>
+      </div>
+
+      <!-- Feature Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 64px;">
+        <!-- Card 1 -->
+        <div style="padding: 32px; border-radius: 16px; background: #111827; border: 1px solid rgba(255, 255, 255, 0.08);">
+          <div style="font-size: 1.5rem; margin-bottom: 16px;">🎨</div>
+          <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; color: #FFFFFF;">
+            Total White-Labeling
+          </h2>
+          <p style="color: #94A3B8; font-size: 0.9rem; line-height: 1.6;">
+            All default provider branding elements have been stripped. Overridden with bespoke React components, agency color tokens, and custom dark/light theme systems.
+          </p>
+        </div>
+
+        <!-- Card 2 -->
+        <div style="padding: 32px; border-radius: 16px; background: #111827; border: 1px solid rgba(255, 255, 255, 0.08);">
+          <div style="font-size: 1.5rem; margin-bottom: 16px;">⚡</div>
+          <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; color: #FFFFFF;">
+            AI Lifecycle Automation
+          </h2>
+          <p style="color: #94A3B8; font-size: 0.9rem; line-height: 1.6;">
+            Code-first <code>beforeChange</code> schema hook checks for empty SEO titles, meta descriptions, and image alt text, automatically calling generative AI via <code>PROCESS_AI_SECRET_KEY</code>.
+          </p>
+        </div>
+
+        <!-- Card 3 -->
+        <div style="padding: 32px; border-radius: 16px; background: #111827; border: 1px solid rgba(255, 255, 255, 0.08);">
+          <div style="font-size: 1.5rem; margin-bottom: 16px;">🚀</div>
+          <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; color: #FFFFFF;">
+            Astro SSR & Vercel Edge
+          </h2>
+          <p style="color: #94A3B8; font-size: 0.9rem; line-height: 1.6;">
+            Native Server-Side Rendering via <code>@astrojs/vercel</code> adapter with production caching headers and isolated CMS configuration boundaries.
+          </p>
+        </div>
+      </div>
+
+      <!-- SSR Realtime Diagnostic Banner -->
+      <div style="padding: 24px; border-radius: 12px; background: rgba(99, 102, 241, 0.06); border: 1px solid rgba(99, 102, 241, 0.2); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #818CF8;">
+            SSR Runtime Execution Log
+          </div>
+          <div style="font-family: monospace; font-size: 0.85rem; color: #E2E8F0; margin-top: 4px;">
+            Rendered at: {serverRenderTime}
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 20px; font-family: monospace; font-size: 0.8rem; color: #94A3B8;">
+          <div>ENV: <span style="color: #34D399;">{deploymentEnv}</span></div>
+          <div>SHA: <span style="color: #A5B4FC;">{gitCommitSha.slice(0, 7)}</span></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Global Footer -->
+    <footer style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding: 24px; text-align: center; color: #64748B; font-size: 0.85rem;">
+      Infusio Studio CMS • Powered by Astro SSR & Vercel Deployment Architecture
+    </footer>
+  </div>
+</Layout>
