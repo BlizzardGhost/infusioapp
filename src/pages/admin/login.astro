@@ -1,11 +1,21 @@
 ---
+/**
+ * File: src/pages/admin/login.astro
+ * Purpose: Passwordless Authenticator (TOTP) Login Portal with First-Login Microsoft Authenticator QR Enrollment.
+ * Spec: specs/001-totp-authenticator-login/spec.md (FR-002, FR-003, FR-005, AC-1..AC-3, AC-5)
+ *
+ * Operator Notes:
+ * - Zero Credential Leakage: Never show example email addresses, usernames, or sample tokens in placeholders.
+ * - First Login Flow: When `firstLogin: true` is returned from `/api/auth/request-code`, renders the QR SVG
+ *   and manual Base32 secret key so the user can pair Microsoft Authenticator on the spot and verify with the 6-digit code.
+ */
 import Layout from '../../layouts/Layout.astro';
 import { BrandLogo } from '../../../cms/components/BrandLogo';
 import { getUserBySession } from '../../../cms/auth/users';
 
 export const prerender = false;
 
-// If already authenticated with a valid session, redirect to /admin
+// If already authenticated with a valid session, redirect directly to /admin
 const currentSession = Astro.cookies.get('infusio_auth_token')?.value;
 if (currentSession) {
   const existingUser = getUserBySession(currentSession);
@@ -21,10 +31,10 @@ if (currentSession) {
   >
     {/* Glass Card Container matching https://infusio-site.vercel.app/ */}
     <div
-      style="width: 100%; max-width: 440px; padding: 38px; border-radius: 20px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(255, 255, 255, 0.10); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45); box-sizing: border-box; backdrop-filter: blur(16px);"
+      style="width: 100%; max-width: 460px; padding: 38px; border-radius: 20px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(255, 255, 255, 0.10); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45); box-sizing: border-box; backdrop-filter: blur(16px);"
     >
       {/* Brand Header */}
-      <div style="text-align: center; margin-bottom: 28px;">
+      <div style="text-align: center; margin-bottom: 26px;">
         <div style="display: flex; justify-content: center; margin-bottom: 14px;">
           <BrandLogo size="lg" />
         </div>
@@ -32,7 +42,7 @@ if (currentSession) {
           Access Portal
         </h1>
         <p style="margin: 0; font-size: 0.875rem; color: #a8b1c1;">
-          Passwordless 4-digit code authentication
+          Passwordless Microsoft Authenticator login
         </p>
       </div>
 
@@ -42,7 +52,7 @@ if (currentSession) {
         style="display: none; padding: 12px 16px; border-radius: 10px; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.4;"
       ></div>
 
-      {/* STEP 1: REQUEST CODE */}
+      {/* STEP 1: ENTER ACCOUNT IDENTIFIER */}
       <div id="stepRequestCode">
         <form id="requestCodeForm" style="display: flex; flex-direction: column; gap: 18px;">
           <div>
@@ -65,35 +75,72 @@ if (currentSession) {
             class="btn btn-primary"
             style="width: 100%; padding: 13px; font-size: 0.95rem; margin-top: 4px;"
           >
-            Send 4-Digit Code →
+            Continue to Authenticator →
           </button>
         </form>
       </div>
 
-      {/* STEP 2: VERIFY 4-DIGIT CODE */}
+      {/* STEP 2: FIRST-LOGIN AUTHENTICATOR QR SETUP + 6-DIGIT VERIFICATION */}
       <div id="stepVerifyCode" style="display: none;">
         <div style="margin-bottom: 16px; padding: 12px 14px; border-radius: 10px; background: rgba(19, 194, 150, 0.1); border: 1px solid rgba(19, 194, 150, 0.25); color: #2dd4bf; font-size: 0.825rem;">
           <span id="targetIdentifierDisplay" style="font-weight: 700;"></span>
-          <div style="font-size: 0.75rem; color: #a8b1c1; margin-top: 2px;">
-            Code is valid for 10 minutes.
+          <div id="targetSubtext" style="font-size: 0.75rem; color: #a8b1c1; margin-top: 2px;">
+            Enter the 6-digit code from Microsoft Authenticator.
+          </div>
+        </div>
+
+        {/* First-Login Authenticator Enrollment Box */}
+        <div
+          id="authenticatorSetupBox"
+          style="display: none; margin-bottom: 20px; padding: 18px; border-radius: 14px; background: rgba(0, 0, 0, 0.38); border: 1px solid rgba(19, 194, 150, 0.35); text-align: center;"
+        >
+          <div style="font-size: 0.76rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #13c296; margin-bottom: 6px;">
+            First-Time Authenticator Setup
+          </div>
+          <p style="margin: 0 0 14px 0; font-size: 0.8rem; color: #a8b1c1; line-height: 1.45;">
+            Open <strong>Microsoft Authenticator</strong> (or Google Authenticator), tap <strong>+ → Other account</strong>, and scan this QR code:
+          </p>
+
+          <div
+            id="qrCodeContainer"
+            style="display: inline-flex; padding: 10px; border-radius: 12px; background: #ffffff; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); margin-bottom: 14px;"
+          ></div>
+
+          <div style="text-align: left; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: #717d91; font-weight: 700;">
+                Manual Setup Key (Base32)
+              </span>
+              <button
+                id="copySecretBtn"
+                type="button"
+                style="background: rgba(19, 194, 150, 0.15); border: 1px solid rgba(19, 194, 150, 0.3); color: #2dd4bf; border-radius: 999px; padding: 2px 10px; font-size: 0.7rem; font-weight: 700; cursor: pointer; font-family: 'Quicksand', sans-serif;"
+              >
+                Copy Key
+              </button>
+            </div>
+            <div
+              id="manualSecretDisplay"
+              style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #e8eef7; word-break: break-all; letter-spacing: 0.05em; font-weight: 600;"
+            ></div>
           </div>
         </div>
 
         <form id="verifyCodeForm" style="display: flex; flex-direction: column; gap: 18px;">
           <div>
             <label style="display: block; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #a8b1c1; margin-bottom: 8px;">
-              Enter 4-Digit Security Code
+              6-Digit Authenticator Code
             </label>
             <input
               id="codeInput"
               type="text"
               required
-              maxlength="4"
-              pattern="[0-9]{4}"
+              maxlength="6"
+              pattern="[0-9]{6}"
               inputmode="numeric"
               autocomplete="one-time-code"
-              placeholder="••••"
-              style="width: 100%; padding: 14px; text-align: center; font-size: 1.8rem; font-weight: 700; letter-spacing: 0.3em; font-family: 'JetBrains Mono', monospace; border-radius: 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(19, 194, 150, 0.4); color: #13c296; box-sizing: border-box; outline: none;"
+              placeholder="••••••"
+              style="width: 100%; padding: 14px; text-align: center; font-size: 1.75rem; font-weight: 700; letter-spacing: 0.28em; font-family: 'JetBrains Mono', monospace; border-radius: 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(19, 194, 150, 0.4); color: #13c296; box-sizing: border-box; outline: none;"
             />
           </div>
 
@@ -115,11 +162,11 @@ if (currentSession) {
               ← Change identifier
             </button>
             <button
-              id="resendCodeBtn"
+              id="showQrSetupBtn"
               type="button"
               style="background: transparent; border: none; color: #2dd4bf; cursor: pointer; padding: 0; font-weight: 600; font-family: 'Quicksand', sans-serif;"
             >
-              Resend code
+              Setup Authenticator QR
             </button>
           </div>
         </form>
@@ -128,7 +175,7 @@ if (currentSession) {
       {/* Security Guidance Footer */}
       <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center;">
         <p style="margin: 0; font-size: 0.78rem; color: #717d91; line-height: 1.5;">
-          Tokens expire automatically after 10 minutes. Microsoft Authenticator compatible. Passwords and public registrations are permanently disabled.
+          Secured by RFC 6238 TOTP (Microsoft Authenticator & Google Authenticator). Passwords and public registrations are permanently disabled.
         </p>
       </div>
     </div>
@@ -137,6 +184,7 @@ if (currentSession) {
   <script>
     let activeIdentifier = '';
     let cachedChallengeToken = '';
+    let rawManualSecret = '';
 
     const stepRequest = document.getElementById('stepRequestCode') as HTMLDivElement;
     const stepVerify = document.getElementById('stepVerifyCode') as HTMLDivElement;
@@ -146,13 +194,19 @@ if (currentSession) {
     const identifierInput = document.getElementById('identifierInput') as HTMLInputElement;
     const requestCodeBtn = document.getElementById('requestCodeBtn') as HTMLButtonElement;
 
+    const setupBox = document.getElementById('authenticatorSetupBox') as HTMLDivElement;
+    const qrContainer = document.getElementById('qrCodeContainer') as HTMLDivElement;
+    const manualSecretDisplay = document.getElementById('manualSecretDisplay') as HTMLDivElement;
+    const copySecretBtn = document.getElementById('copySecretBtn') as HTMLButtonElement;
+
     const verifyForm = document.getElementById('verifyCodeForm') as HTMLFormElement;
     const codeInput = document.getElementById('codeInput') as HTMLInputElement;
     const verifyCodeBtn = document.getElementById('verifyCodeBtn') as HTMLButtonElement;
     const targetDisplay = document.getElementById('targetIdentifierDisplay') as HTMLSpanElement;
+    const targetSubtext = document.getElementById('targetSubtext') as HTMLDivElement;
 
     const backBtn = document.getElementById('backToStep1Btn') as HTMLButtonElement;
-    const resendBtn = document.getElementById('resendCodeBtn') as HTMLButtonElement;
+    const showQrSetupBtn = document.getElementById('showQrSetupBtn') as HTMLButtonElement;
 
     function showAlert(msg: string, isError = true) {
       alertBox.textContent = msg;
@@ -166,62 +220,83 @@ if (currentSession) {
       alertBox.style.display = 'none';
     }
 
-    // Step 1: Request Code
-    requestForm?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const val = identifierInput.value.trim();
-      if (!val) return;
-
+    async function loadAuthenticatorStep(identifier: string, forceSetup = false) {
       hideAlert();
       requestCodeBtn.disabled = true;
-      requestCodeBtn.textContent = 'Generating 4-digit token...';
+      requestCodeBtn.textContent = 'Checking account...';
 
       try {
         const res = await fetch('/api/auth/request-code', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: val }),
+          body: JSON.stringify({ identifier, forceSetup }),
         });
 
         const data = await res.json();
 
         if (res.ok && data.success) {
-          activeIdentifier = val;
+          activeIdentifier = identifier;
           cachedChallengeToken = data.challengeToken || '';
-          targetDisplay.textContent = `Security code generated for ${activeIdentifier}`;
+          targetDisplay.textContent = `Account: ${activeIdentifier}`;
+
+          if (data.firstLogin && data.qrSvg) {
+            setupBox.style.display = 'block';
+            qrContainer.innerHTML = data.qrSvg;
+            rawManualSecret = data.manualSecret || '';
+            manualSecretDisplay.textContent = data.formattedSecret || data.manualSecret || '';
+            targetSubtext.textContent = 'Scan the QR code below, then enter your first 6-digit code to finish setup.';
+            showQrSetupBtn.style.display = 'none';
+          } else {
+            setupBox.style.display = 'none';
+            targetSubtext.textContent = 'Enter the 6-digit code from your Microsoft Authenticator app.';
+            showQrSetupBtn.style.display = 'inline-block';
+          }
+
           stepRequest.style.display = 'none';
           stepVerify.style.display = 'block';
           codeInput.value = '';
           codeInput.focus();
-
-          if (data.clientDispatchCode) {
-            showAlert(`[Access Code]: Enter ${data.clientDispatchCode} to access your workspace.`, false);
-          } else {
-            showAlert(data.message || '4-digit code dispatched. Valid for 10 minutes.', false);
-          }
         } else {
           showAlert(data.error || 'Account identifier not found.', true);
         }
-      } catch (err) {
+      } catch {
         showAlert('Network communication error. Please try again.', true);
       } finally {
         requestCodeBtn.disabled = false;
-        requestCodeBtn.textContent = 'Send 4-Digit Code →';
+        requestCodeBtn.textContent = 'Continue to Authenticator →';
       }
+    }
+
+    // Step 1: Submit Account Identifier
+    requestForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const val = identifierInput.value.trim();
+      if (!val) return;
+      await loadAuthenticatorStep(val, false);
     });
 
-    // Step 2: Verify Code
+    // Copy manual Base32 setup key
+    copySecretBtn?.addEventListener('click', () => {
+      if (!rawManualSecret) return;
+      navigator.clipboard.writeText(rawManualSecret);
+      copySecretBtn.textContent = '✓ Copied';
+      setTimeout(() => {
+        copySecretBtn.textContent = 'Copy Key';
+      }, 2500);
+    });
+
+    // Step 2: Verify 6-Digit Authenticator Code
     verifyForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const code = codeInput.value.trim();
-      if (!code || code.length !== 4) {
-        showAlert('Please enter the complete 4-digit code.', true);
+      const code = codeInput.value.replace(/\s+/g, '');
+      if (!code || code.length !== 6) {
+        showAlert('Please enter the 6-digit code from Microsoft Authenticator.', true);
         return;
       }
 
       hideAlert();
       verifyCodeBtn.disabled = true;
-      verifyCodeBtn.textContent = 'Verifying security code...';
+      verifyCodeBtn.textContent = 'Verifying Authenticator code...';
 
       try {
         const res = await fetch('/api/auth/verify-code', {
@@ -239,11 +314,11 @@ if (currentSession) {
         if (res.ok && data.success) {
           window.location.href = data.redirect || '/admin';
         } else {
-          showAlert(data.error || 'Invalid or expired 4-digit code.', true);
+          showAlert(data.error || 'Invalid 6-digit code. Check Microsoft Authenticator and try again.', true);
           verifyCodeBtn.disabled = false;
           verifyCodeBtn.textContent = 'Verify Code & Enter Workspace →';
         }
-      } catch (err) {
+      } catch {
         showAlert('Verification failed due to a network error.', true);
         verifyCodeBtn.disabled = false;
         verifyCodeBtn.textContent = 'Verify Code & Enter Workspace →';
@@ -257,29 +332,9 @@ if (currentSession) {
       identifierInput.focus();
     });
 
-    resendBtn?.addEventListener('click', async () => {
+    showQrSetupBtn?.addEventListener('click', async () => {
       if (!activeIdentifier) return;
-      resendBtn.textContent = 'Sending...';
-      try {
-        const res = await fetch('/api/auth/request-code', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: activeIdentifier }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          cachedChallengeToken = data.challengeToken || cachedChallengeToken;
-          if (data.clientDispatchCode) {
-            showAlert(`[Access Code]: Enter ${data.clientDispatchCode} to access your workspace.`, false);
-          } else {
-            showAlert('Fresh 4-digit code sent. Valid for 10 minutes.', false);
-          }
-        }
-      } catch {
-        showAlert('Failed to resend code.', true);
-      } finally {
-        resendBtn.textContent = 'Resend code';
-      }
+      await loadAuthenticatorStep(activeIdentifier, true);
     });
   </script>
 </Layout>

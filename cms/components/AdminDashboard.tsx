@@ -1,3 +1,10 @@
+/**
+ * File: cms/components/AdminDashboard.tsx
+ * Purpose: Master Superadmin Control Plane for boris@computacionintegral.com — global site metrics,
+ *          hero-wall-mvp Antigravity sync, and Client Authenticator / Dispatch Token Management.
+ * Spec: specs/001-totp-authenticator-login/spec.md (FR-004, AC-4)
+ */
+
 import React, { useState } from 'react';
 import { CustomNav } from './CustomNav';
 import { CustomFooter } from './CustomFooter';
@@ -30,8 +37,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
 
-  // Dynamic 4-digit token generator state for clients
-  const [generatedClientCodes, setGeneratedClientCodes] = useState<Record<string, { code: string; expiresAt: number }>>({});
+  // Client Authenticator & Dispatch Code state for Superadmin delivery
+  const [generatedClientCodes, setGeneratedClientCodes] = useState<
+    Record<string, { code: string; setupSecret?: string; expiresAt: number }>
+  >({});
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   const clients = INITIAL_USERS.filter((u) => u.role === 'client');
@@ -41,22 +50,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const res = await fetch('/api/auth/request-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier }),
+        body: JSON.stringify({ identifier, adminDispatch: true }),
       });
       const data = await res.json();
       if (data.clientDispatchCode) {
         setGeneratedClientCodes((prev) => ({
           ...prev,
-          [identifier]: { code: data.clientDispatchCode, expiresAt: Date.now() + 10 * 60 * 1000 },
+          [identifier]: {
+            code: data.clientDispatchCode,
+            setupSecret: data.clientSetupSecret,
+            expiresAt: Date.now() + 10 * 60 * 1000,
+          },
         }));
       }
     } catch {
-      // Fallback local mock
-      const mockCode = Math.floor(1000 + Math.random() * 9000).toString();
-      setGeneratedClientCodes((prev) => ({
-        ...prev,
-        [identifier]: { code: mockCode, expiresAt: Date.now() + 10 * 60 * 1000 },
-      }));
+      // Fallback error handling
     }
   };
 
@@ -207,7 +215,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     marginBottom: '8px',
                   }}
                 >
-                  Master Agency Control • On-Demand 4-Digit Tokens
+                  Master Agency Control • Microsoft Authenticator TOTP
                 </div>
                 <h1
                   style={{
@@ -221,7 +229,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   Global Overview: {user.identifier}
                 </h1>
                 <p style={{ margin: 0, color: '#a8b1c1', fontSize: '0.95rem', lineHeight: 1.6 }}>
-                  Passwordless authentication active. 4-digit tokens expire in 10 minutes. Manage client scopes and trigger GitHub sync for <strong>hero-wall-mvp</strong>.
+                  Passwordless Microsoft Authenticator (RFC 6238 TOTP) active. Manage client scopes and trigger GitHub sync for <strong>hero-wall-mvp</strong>.
                 </p>
               </div>
 
@@ -279,10 +287,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 4px 0', color: '#e8eef7' }}>
-                  Client Access Management (On-Demand 10-Min Codes)
+                  Client Access Management (Authenticator & Admin Dispatch)
                 </h2>
                 <p style={{ margin: 0, fontSize: '0.85rem', color: '#a8b1c1' }}>
-                  Generate on-demand 4-digit codes for client accounts (valid for 10 minutes, single-use).
+                  Retrieve live 6-digit Authenticator codes or Base32 setup keys for client accounts without email.
                 </p>
               </div>
             </div>
@@ -338,23 +346,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
 
                     {/* Token Generator Controls */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                       {isCodeLive ? (
                         <>
-                          <div
-                            style={{
-                              padding: '10px 18px',
-                              borderRadius: '8px',
-                              background: '#0e1113',
-                              border: '1px solid #13c296',
-                              fontFamily: 'monospace',
-                              fontSize: '1.25rem',
-                              fontWeight: 800,
-                              color: '#13c296',
-                              letterSpacing: '0.2em',
-                            }}
-                          >
-                            {active.code}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div
+                              style={{
+                                padding: '10px 18px',
+                                borderRadius: '8px',
+                                background: '#0e1113',
+                                border: '1px solid #13c296',
+                                fontFamily: 'monospace',
+                                fontSize: '1.25rem',
+                                fontWeight: 800,
+                                color: '#13c296',
+                                letterSpacing: '0.2em',
+                              }}
+                            >
+                              {active.code}
+                            </div>
+                            {active.setupSecret && (
+                              <div style={{ fontSize: '0.7rem', color: '#a8b1c1', fontFamily: 'monospace' }}>
+                                Setup Key: {active.setupSecret}
+                              </div>
+                            )}
                           </div>
 
                           <button
@@ -372,7 +387,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               fontFamily: 'Quicksand, sans-serif',
                             }}
                           >
-                            {copiedToken === client.id ? '✓ Copied!' : 'Copy 4-Digit Code'}
+                            {copiedToken === client.id ? '✓ Copied!' : 'Copy 6-Digit Code'}
                           </button>
                         </>
                       ) : (
@@ -392,7 +407,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             boxShadow: '0 4px 12px rgba(19, 194, 150, 0.25)',
                           }}
                         >
-                          Generate 4-Digit Code (10m)
+                          View Client Code & Setup Key
                         </button>
                       )}
                     </div>
