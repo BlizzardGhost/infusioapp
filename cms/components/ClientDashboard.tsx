@@ -1,4 +1,16 @@
-import React, { useState } from 'react';
+/**
+ * File: cms/components/ClientDashboard.tsx
+ * Purpose: Scoped Client Control Plane for test@sperling (managing camp-david-mvp) with the
+ *          Conversational Natural Language Site Assistant.
+ * Spec: specs/002-agentic-cms-engine/spec.md (FR-005, AC-1, AC-3, AC-5)
+ *
+ * Operator Notes:
+ * - What/Why: Enables clients to update their live website copy, headings, and promo cards
+ *   in seconds by typing natural language instructions without breaking layouts or contacting devs.
+ * - Plan Boundaries: Enforces plan tier restrictions while offering automated agent assistance.
+ */
+
+import React, { useState, useEffect } from 'react';
 import { BrandLogo } from './BrandLogo';
 import type { UserAccount, ClientFeature, ClientChangeRequest } from '../auth/users';
 
@@ -19,11 +31,112 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
 
   const [features, setFeatures] = useState<ClientFeature[]>(site.features);
   const [changeRequests, setChangeRequests] = useState<ClientChangeRequest[]>(site.changeRequests);
-  const [newTitle, setNewTitle] = useState('');
-  const [newDesc, setNewDesc] = useState('');
-  const [newCategory, setNewCategory] = useState<'content' | 'feature' | 'design' | 'bug'>('content');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+
+  // Live content state
+  const [siteContent, setSiteContent] = useState({
+    siteName: 'Camp David MVP',
+    heroHeading: 'Experience Camp David: Luxury Cabins & Nature Retreat',
+    heroSubheading:
+      'Handcrafted accommodations, peaceful alpine environments, and five-star hospitality nestled in pristine mountain wilderness.',
+    promoBanner: 'Summer Getaway: Book 3 Nights, Get 1 Complimentary',
+  });
+
+  // Agent prompt state
+  const [promptInput, setPromptInput] = useState('');
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [agentFeedback, setAgentFeedback] = useState<{
+    success: boolean;
+    message: string;
+    executionMs?: number;
+    diffs?: Array<{ field: string; before: any; after: any }>;
+  } | null>(null);
+
+  useEffect(() => {
+    fetchLiveSiteState();
+  }, []);
+
+  const fetchLiveSiteState = async () => {
+    try {
+      const res = await fetch(`/api/agent/v1/sites?siteId=camp-david-mvp`);
+      const data = await res.json();
+      if (data.success && data.site?.data) {
+        const d = data.site.data;
+        setSiteContent({
+          siteName: d.siteName || site.name,
+          heroHeading: d.heroHeading || siteContent.heroHeading,
+          heroSubheading: d.heroSubheading || siteContent.heroSubheading,
+          promoBanner: d.promoBanner || siteContent.promoBanner,
+        });
+      }
+    } catch {
+      // Offline fallback
+    }
+  };
+
+  const handleExecuteAgentPrompt = async (e?: React.FormEvent, customPrompt?: string) => {
+    if (e) e.preventDefault();
+    const promptToRun = customPrompt || promptInput;
+    if (!promptToRun.trim()) return;
+
+    setIsExecuting(true);
+    setAgentFeedback(null);
+
+    try {
+      const res = await fetch('/api/agent/v1/prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          siteId: 'camp-david-mvp',
+          prompt: promptToRun.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setAgentFeedback({
+          success: true,
+          message: data.message,
+          executionMs: data.executionMs,
+          diffs: data.diffs,
+        });
+
+        if (data.updatedData) {
+          const d = data.updatedData;
+          setSiteContent({
+            siteName: d.siteName || siteContent.siteName,
+            heroHeading: d.heroHeading || siteContent.heroHeading,
+            heroSubheading: d.heroSubheading || siteContent.heroSubheading,
+            promoBanner: d.promoBanner || siteContent.promoBanner,
+          });
+        }
+
+        // Add to recent request log
+        const newReq: ClientChangeRequest = {
+          id: `cr_${Date.now()}`,
+          title: promptToRun.slice(0, 48),
+          description: data.message,
+          category: 'content',
+          status: 'completed',
+          createdAt: new Date().toISOString(),
+        };
+        setChangeRequests((prev) => [newReq, ...prev]);
+        setPromptInput('');
+      } else {
+        setAgentFeedback({
+          success: false,
+          message: data.error || 'Agent prompt could not be completed.',
+        });
+      }
+    } catch {
+      setAgentFeedback({
+        success: false,
+        message: 'Network communication error with Infusio Agent.',
+      });
+    } finally {
+      setIsExecuting(false);
+    }
+  };
 
   const handleToggleFeature = (featureId: string) => {
     setFeatures((prev) =>
@@ -40,28 +153,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
     );
   };
 
-  const handleCreateRequest = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
-
-    setIsSubmitting(true);
-    const newReq: ClientChangeRequest = {
-      id: `cr_${Date.now()}`,
-      title: newTitle.trim(),
-      description: newDesc.trim() || 'No detailed description provided.',
-      category: newCategory,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    };
-
-    setChangeRequests([newReq, ...changeRequests]);
-    setNewTitle('');
-    setNewDesc('');
-    setIsSubmitting(false);
-    setFeedbackMsg('Your change request has been dispatched to the Infusio engineering team!');
-    setTimeout(() => setFeedbackMsg(null), 5000);
-  };
-
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/admin/login';
@@ -73,7 +164,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
         minHeight: '100vh',
         backgroundColor: '#0e1113',
         color: '#e8eef7',
-        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        fontFamily: "'Quicksand', system-ui, -apple-system, sans-serif",
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -127,6 +218,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
               fontSize: '0.8rem',
               fontWeight: 600,
               cursor: 'pointer',
+              fontFamily: 'Quicksand, sans-serif',
             }}
           >
             Log Out
@@ -135,14 +227,14 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
       </header>
 
       {/* Main Content Area */}
-      <main style={{ flex: 1, maxWidth: '1200px', width: '100%', margin: '0 auto', padding: '36px 24px' }}>
-        {/* Site Header Banner */}
+      <main style={{ flex: 1, maxWidth: '1280px', width: '100%', margin: '0 auto', padding: '36px 24px' }}>
+        {/* Banner with Live Site Link */}
         <div
           style={{
             padding: '28px 32px',
             borderRadius: '16px',
-            background: 'linear-gradient(135deg, rgba(19, 194, 150, 0.12) 0%, rgba(45, 212, 191, 0.05) 100%)',
-            border: '1px solid rgba(19, 194, 150, 0.25)',
+            background: 'linear-gradient(135deg, rgba(19, 194, 150, 0.15) 0%, rgba(45, 212, 191, 0.05) 100%)',
+            border: '1px solid rgba(19, 194, 150, 0.3)',
             marginBottom: '32px',
             display: 'flex',
             alignItems: 'center',
@@ -152,11 +244,11 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
           }}
         >
           <div>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#2dd4bf' }}>
-              Managed Application
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#2dd4bf' }}>
+              Managed Application • Agentic Control Active
             </div>
             <h1 style={{ fontSize: '1.8rem', fontWeight: 800, margin: '4px 0 8px 0', color: '#e8eef7' }}>
-              {site.name}
+              {siteContent.siteName}
             </h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.85rem', color: '#a8b1c1' }}>
               <span>Live Environment:</span>
@@ -164,7 +256,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
                 href={site.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: '#13c296', fontWeight: 600, textDecoration: 'underline' }}
+                style={{ color: '#13c296', fontWeight: 700, textDecoration: 'underline' }}
               >
                 {site.url} ↗
               </a>
@@ -180,11 +272,11 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                padding: '12px 20px',
-                borderRadius: '10px',
+                padding: '12px 22px',
+                borderRadius: '999px',
                 background: 'linear-gradient(135deg, #13c296, #2dd4bf)',
                 color: '#0b0f11',
-                fontWeight: 700,
+                fontWeight: 800,
                 fontSize: '0.875rem',
                 textDecoration: 'none',
                 boxShadow: '0 4px 14px rgba(19, 194, 150, 0.3)',
@@ -195,25 +287,174 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
           </div>
         </div>
 
-        {feedbackMsg && (
-          <div
-            style={{
-              padding: '12px 20px',
-              borderRadius: '10px',
-              background: 'rgba(19, 194, 150, 0.2)',
-              border: '1px solid rgba(19, 194, 150, 0.4)',
-              color: '#2dd4bf',
-              marginBottom: '24px',
-              fontWeight: 600,
-              fontSize: '0.875rem',
-            }}
-          >
-            ✓ {feedbackMsg}
+        {/* SECTION 1: CONVERSATIONAL NATURAL LANGUAGE ASSISTANT */}
+        <div
+          style={{
+            padding: '28px',
+            borderRadius: '16px',
+            background: '#14191d',
+            border: '1px solid rgba(19, 194, 150, 0.35)',
+            marginBottom: '32px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
+          }}
+        >
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: '#2dd4bf' }}>
+                ⚡ Conversational Site Assistant
+              </span>
+              <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(19,194,150,0.15)', color: '#13c296', fontWeight: 700 }}>
+                Instant Execution
+              </span>
+            </div>
+            <h2 style={{ fontSize: '1.3rem', fontWeight: 700, margin: '4px 0', color: '#e8eef7' }}>
+              Update Your Site in Seconds
+            </h2>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: '#a8b1c1' }}>
+              Prompt changes to headlines, seasonal promos, or cabin copy. The Infusio agent validates design tokens and updates the site automatically.
+            </p>
           </div>
-        )}
+
+          <form onSubmit={handleExecuteAgentPrompt} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              value={promptInput}
+              onChange={(e) => setPromptInput(e.target.value)}
+              placeholder='e.g. Update hero headline to "Luxury Mountain Cabins & Alpine Retreat"'
+              disabled={isExecuting}
+              style={{
+                flex: 1,
+                minWidth: '280px',
+                padding: '13px 18px',
+                borderRadius: '10px',
+                background: 'rgba(0, 0, 0, 0.4)',
+                border: '1px solid rgba(19, 194, 150, 0.4)',
+                color: '#e8eef7',
+                fontSize: '0.925rem',
+                fontFamily: 'Quicksand, sans-serif',
+                outline: 'none',
+              }}
+            />
+
+            <button
+              type="submit"
+              disabled={isExecuting || !promptInput.trim()}
+              style={{
+                padding: '13px 24px',
+                borderRadius: '999px',
+                background: 'linear-gradient(135deg, #13c296, #2dd4bf)',
+                color: '#0b0f11',
+                fontWeight: 800,
+                fontSize: '0.875rem',
+                border: 'none',
+                cursor: isExecuting || !promptInput.trim() ? 'not-allowed' : 'pointer',
+                opacity: isExecuting || !promptInput.trim() ? 0.6 : 1,
+                fontFamily: 'Quicksand, sans-serif',
+                boxShadow: '0 4px 14px rgba(19, 194, 150, 0.3)',
+              }}
+            >
+              {isExecuting ? '⚡ Updating Site...' : '⚡ Apply Update'}
+            </button>
+          </form>
+
+          {/* Prompt Presets */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
+            <span style={{ fontSize: '0.72rem', color: '#717d91', fontWeight: 700, textTransform: 'uppercase' }}>
+              Quick Presets:
+            </span>
+            <button
+              type="button"
+              onClick={() => handleExecuteAgentPrompt(undefined, 'Update hero headline to "Luxury Mountain Cabins & Alpine Retreat"')}
+              style={{
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '999px',
+                padding: '4px 12px',
+                fontSize: '0.74rem',
+                color: '#2dd4bf',
+                cursor: 'pointer',
+              }}
+            >
+              + Headline: "Luxury Mountain Cabins"
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExecuteAgentPrompt(undefined, 'Update promo banner to "Autumn Special: 20% Off All Cabins"')}
+              style={{
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '999px',
+                padding: '4px 12px',
+                fontSize: '0.74rem',
+                color: '#2dd4bf',
+                cursor: 'pointer',
+              }}
+            >
+              + Promo: "Autumn Special - 20% Off"
+            </button>
+          </div>
+
+          {/* Agent Execution Feedback */}
+          {agentFeedback && (
+            <div
+              style={{
+                marginTop: '16px',
+                padding: '14px 16px',
+                borderRadius: '10px',
+                background: agentFeedback.success ? 'rgba(19, 194, 150, 0.14)' : 'rgba(239, 68, 68, 0.14)',
+                border: `1px solid ${agentFeedback.success ? 'rgba(19, 194, 150, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 700, fontSize: '0.85rem', color: agentFeedback.success ? '#2dd4bf' : '#f87171' }}>
+                  {agentFeedback.success ? '✓ ' : '✕ '} {agentFeedback.message}
+                </span>
+                {agentFeedback.executionMs && (
+                  <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(0,0,0,0.3)', color: '#13c296', fontFamily: 'monospace' }}>
+                    {agentFeedback.executionMs}ms
+                  </span>
+                )}
+              </div>
+
+              {agentFeedback.diffs && agentFeedback.diffs.length > 0 && (
+                <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {agentFeedback.diffs.map((d, idx) => (
+                    <div key={idx} style={{ padding: '6px 10px', borderRadius: '4px', background: 'rgba(0,0,0,0.3)', fontSize: '0.78rem' }}>
+                      <strong style={{ color: '#2dd4bf' }}>{d.field}</strong>: updated to <span style={{ color: '#13c296', fontWeight: 600 }}>"{String(d.after)}"</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* SECTION 2: LIVE SITE CONTENT CARD */}
+        <div
+          style={{
+            padding: '24px 28px',
+            borderRadius: '16px',
+            background: 'rgba(0,0,0,0.25)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            marginBottom: '32px',
+          }}
+        >
+          <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: '#717d91', marginBottom: '8px' }}>
+            Live Preview State
+          </div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#e8eef7', marginBottom: '6px' }}>
+            {siteContent.heroHeading}
+          </div>
+          <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#a8b1c1', lineHeight: 1.5 }}>
+            {siteContent.heroSubheading}
+          </p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '8px', background: 'rgba(19, 194, 150, 0.15)', border: '1px solid rgba(19, 194, 150, 0.3)', color: '#2dd4bf', fontSize: '0.8rem', fontWeight: 700 }}>
+            <span>Promo:</span> {siteContent.promoBanner}
+          </div>
+        </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '28px' }}>
-          {/* Section 1: Features & Plan Management */}
+          {/* Section 3: Features & Plan Management */}
           <div
             style={{
               padding: '28px',
@@ -293,7 +534,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
             </div>
           </div>
 
-          {/* Section 2: Request Updates or New Content */}
+          {/* Section 4: Change Requests History */}
           <div
             style={{
               padding: '28px',
@@ -304,143 +545,47 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
           >
             <div style={{ marginBottom: '20px' }}>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 6px 0', color: '#e8eef7' }}>
-                Request Content or Feature Changes
+                Agentic Update History
               </h2>
               <p style={{ margin: 0, fontSize: '0.85rem', color: '#a8b1c1' }}>
-                Submit copy changes, feature requests, or updates directly to the Infusio agent.
+                Audit trail of changes executed on Camp David MVP.
               </p>
             </div>
 
-            <form onSubmit={handleCreateRequest} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#a8b1c1', marginBottom: '6px' }}>
-                  Request Title / Short Description
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Update seasonal hero promo headline"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {changeRequests.map((cr) => (
+                <div
+                  key={cr.id}
                   style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    background: '#0e1113',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    color: '#e8eef7',
-                    fontSize: '0.875rem',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#a8b1c1', marginBottom: '6px' }}>
-                  Category
-                </label>
-                <select
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value as any)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    background: '#0e1113',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    color: '#e8eef7',
-                    fontSize: '0.875rem',
-                    boxSizing: 'border-box',
+                    padding: '14px 16px',
+                    borderRadius: '10px',
+                    background: 'rgba(0, 0, 0, 0.25)',
+                    border: '1px solid rgba(255, 255, 255, 0.04)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                   }}
                 >
-                  <option value="content">Content & Copy Update</option>
-                  <option value="feature">Feature Enablement</option>
-                  <option value="design">Design / Layout Tweak</option>
-                  <option value="bug">Report an Issue</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#a8b1c1', marginBottom: '6px' }}>
-                  Detailed Instructions / New Copy
-                </label>
-                <textarea
-                  rows={4}
-                  placeholder="Paste your exact copy or details for our autonomous agent and developers..."
-                  value={newDesc}
-                  onChange={(e) => setNewDesc(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    background: '#0e1113',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    color: '#e8eef7',
-                    fontSize: '0.875rem',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                style={{
-                  padding: '12px 20px',
-                  borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #13c296, #2dd4bf)',
-                  color: '#0b0f11',
-                  fontWeight: 800,
-                  fontSize: '0.875rem',
-                  border: 'none',
-                  cursor: 'pointer',
-                  marginTop: '6px',
-                }}
-              >
-                {isSubmitting ? 'Submitting...' : 'Submit Request to Infusio'}
-              </button>
-            </form>
-
-            {/* Change Requests History */}
-            <div style={{ marginTop: '28px' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#717d91', textTransform: 'uppercase', marginBottom: '10px' }}>
-                Recent Requests ({changeRequests.length})
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {changeRequests.map((cr) => (
-                  <div
-                    key={cr.id}
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.875rem', color: '#e8eef7' }}>{cr.title}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#717d91', marginTop: '2px' }}>
+                      {new Date(cr.createdAt).toLocaleDateString()} • {cr.category}
+                    </div>
+                  </div>
+                  <span
                     style={{
-                      padding: '12px 14px',
-                      borderRadius: '8px',
-                      background: 'rgba(0, 0, 0, 0.2)',
-                      border: '1px solid rgba(255, 255, 255, 0.04)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      background: cr.status === 'completed' ? 'rgba(19, 194, 150, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                      color: cr.status === 'completed' ? '#13c296' : '#f59e0b',
                     }}
                   >
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#e8eef7' }}>{cr.title}</div>
-                      <div style={{ fontSize: '0.72rem', color: '#717d91' }}>
-                        {new Date(cr.createdAt).toLocaleDateString()} • Category: {cr.category}
-                      </div>
-                    </div>
-                    <span
-                      style={{
-                        fontSize: '0.68rem',
-                        fontWeight: 700,
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        background: cr.status === 'completed' ? 'rgba(19, 194, 150, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                        color: cr.status === 'completed' ? '#13c296' : '#f59e0b',
-                      }}
-                    >
-                      {cr.status.toUpperCase()}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                    {cr.status.toUpperCase()}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

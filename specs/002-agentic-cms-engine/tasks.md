@@ -1,0 +1,21 @@
+# Tasks — Spec 002: Agentic CMS Engine
+
+- [x] **T1: Spec & Test Suite Setup**
+  - [x] Create `specs/002-agentic-cms-engine/{spec,plan,tasks}.md`.
+  - [x] Write `tests/agent-engine.test.ts` to test AC-1 through AC-6 (prompt execution, layout/security guardrails, role permission boundaries, diff generation, rollback).
+- [x] **T2: Agentic Guardrails & Site Data Store**
+  - [x] Implement `cms/agent/guardrails.ts` with XSS sanitization, schema validation, and layout protection rules.
+  - [x] Implement `cms/agent/sitesStore.ts` with multi-site schemas (`hero-wall-mvp`, `camp-david-mvp`) and snapshot/rollback history.
+- [x] **T3: Natural Language Intent Engine**
+  - [x] Implement `cms/agent/engine.ts` with intent parsing, schema mutations, diff generation, and fallback/Gemini enrichment.
+- [x] **T4: Agent API Routes**
+  - [x] Implement `src/pages/api/agent/v1/prompt.ts` with role-based session auth and guardrails execution.
+  - [x] Implement `src/pages/api/agent/v1/sites.ts` for site schema inspection, state retrieval, and instant rollback.
+- [x] **T5: Master Admin Dashboard Upgrade**
+  - [x] Update `cms/components/AdminDashboard.tsx` with the **Interactive Agentic Copilot Console**, prompt bar, live diff viewer, timing metrics, and rollback controls.
+- [x] **T6: Client Dashboard Upgrade**
+  - [x] Update `cms/components/ClientDashboard.tsx` with the **Conversational Site Assistant** for real-time natural language updates to `camp-david-mvp`.
+- [x] **T7: MCP Integration Documentation & Verification**
+  - [x] Create `specs/002-agentic-cms-engine/mcp-setup.md` covering `withastro/docs-mcp` and `vercel-mcp`.
+  - [x] Run test suite (`node --experimental-strip-types tests/agent-engine.test.ts`), `npm run type-check`, and `npm run build`.
+  - [ ] Commit, push to `origin/main`, and deploy to production Vercel (`https://infusioapp.vercel.app`).
