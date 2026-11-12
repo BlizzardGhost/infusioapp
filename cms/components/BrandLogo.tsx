@@ -29,13 +29,17 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         textDecoration: 'none',
       }}
     >
-      {/* Official Infusio WebP Logo Asset */}
+      {/* Official Infusio WebP Logo Asset (Modern Web Guidance: optimize-image-priority LCP) */}
       <img
         src="/assets/brand-logo.webp"
         alt="Infusio"
+        fetchPriority="high"
+        width={Math.round(currentHeight * 3.5)}
+        height={currentHeight}
         style={{
           height: `${currentHeight}px`,
           width: 'auto',
+          aspectRatio: '3.5 / 1',
           objectFit: 'contain',
         }}
         onError={(e) => {
